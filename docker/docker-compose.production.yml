@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  # 1. Database (PostgreSQL 16)
+  postgres:
+    image: postgres:16-alpine
+    container_name: kpi_prod_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-kpi_prod_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-KpiProduction2026Secret!}
+      POSTGRES_DB: ${DB_NAME:-kpi_production_db}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-kpi_prod_user} -d ${DB_NAME:-kpi_production_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kpi_network
+
+  # 2. Redis In-Memory Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: kpi_prod_redis
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-RedisProdKpi2026!}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_prod_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-RedisProdKpi2026!}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kpi_network
+
+  # 3. Object Storage (MinIO S3 for Evidence & Attachments)
+  minio:
+    image: minio/minio:RELEASE.2024-01-18T22-51-28Z
+    container_name: kpi_prod_minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-kpi_minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-MinioProduction2026Secure!}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_prod_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - kpi_network
+
+  # 4. Backend NestJS REST API
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: api-production
+    container_name: kpi_prod_api
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      API_PREFIX: api/v1
+      DATABASE_URL: postgresql://${DB_USER:-kpi_prod_user}:${DB_PASSWORD:-KpiProduction2026Secret!}@postgres:5432/${DB_NAME:-kpi_production_db}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-RedisProdKpi2026!}
+      JWT_SECRET: ${JWT_SECRET:-JwtProdSecretKey2026StrictlyConfidential!}
+      JWT_EXPIRES_IN: 86400
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - kpi_network
+
+  # 5. Frontend Client & Reverse Proxy (Nginx)
+  client:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: frontend-production
+    container_name: kpi_prod_client
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+    networks:
+      - kpi_network
+
+networks:
+  kpi_network:
+    driver: bridge
+
+volumes:
+  postgres_prod_data:
+    driver: local
+  redis_prod_data:
+    driver: local
+  minio_prod_data:
+    driver: local

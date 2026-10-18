@@ -1,0 +1,226 @@
+/* ==============================================================================
+   HỆ THỐNG THÔNG TIN TÁC NGHIỆP KPI - DESIGN TOKENS (PHASE 2.5)
+   Chuẩn hóa giao diện: 1 Primary Brand, Neutral Slate, Semantic Colors,
+   Fixed Ranking Tiers, Vietnamese Typography (Be Vietnam Pro), Tabular Numbers,
+   4px Spacing Grid, 8-12px Corner Radii, Subtle Shadows.
+   ============================================================================== */
+
+:root {
+  /* Typography */
+  --font-sans: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  /* Font Scale: 12 / 14 / 16 / 20 / 24 / 32px */
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.875rem;   /* 14px */
+  --text-base: 1rem;     /* 16px */
+  --text-lg: 1.25rem;    /* 20px */
+  --text-xl: 1.5rem;     /* 24px */
+  --text-2xl: 2rem;      /* 32px */
+
+  /* 1 Primary Color: Professional Slate Navy (Xanh dương đậm chuyên nghiệp) */
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-200: #bfdbfe;
+  --primary-300: #93c5fd;
+  --primary-400: #60a5fa;
+  --primary-500: #3b82f6;
+  --primary-600: #1d4ed8; /* Brand core light */
+  --primary-700: #1e40af;
+  --primary-800: #1e3a8a;
+  --primary-900: #172554;
+  --primary-950: #0f172a;
+
+  /* Neutral Slate (Thang xám trung tính) */
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --slate-950: #020617;
+
+  /* Semantic Colors (Màu ngữ nghĩa chuẩn) */
+  --success-50: #ecfdf5;
+  --success-100: #d1fae5;
+  --success-500: #10b981;
+  --success-600: #059669; /* Đạt / Hoàn thành tốt */
+  --success-700: #047857;
+
+  --warning-50: #fffbeb;
+  --warning-100: #fef3c7;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706; /* Cần đôn đốc / Sắp đến hạn */
+  --warning-700: #b45309;
+
+  --danger-50: #fef2f2;
+  --danger-100: #fee2e2;
+  --danger-500: #ef4444;
+  --danger-600: #dc2626; /* Quá hạn / Không hoàn thành */
+  --danger-700: #b91c1c;
+
+  --info-50: #f0f9ff;
+  --info-100: #e0f2fe;
+  --info-500: #0ea5e9;
+  --info-600: #0284c7; /* Thông tin / Hướng dẫn */
+  --info-700: #0369a1;
+
+  /* CỐ ĐỊNH MÀU XẾP LOẠI TOÀN HỆ THỐNG (NĐ 90/2020 & 48/2023) */
+  --rank-excellent-bg: #faf5ff;
+  --rank-excellent-text: #6b21a8;
+  --rank-excellent-border: #d8b4fe;
+  --rank-excellent-solid: #7c3aed; /* Xuất sắc (<= 20%) */
+
+  --rank-good-bg: #ecfdf5;
+  --rank-good-text: #065f46;
+  --rank-good-border: #a7f3d0;
+  --rank-good-solid: #059669;      /* Tốt */
+
+  --rank-completed-bg: #eff6ff;
+  --rank-completed-text: #1e40af;
+  --rank-completed-border: #bfdbfe;
+  --rank-completed-solid: #2563eb; /* Hoàn thành */
+
+  --rank-failed-bg: #fef2f2;
+  --rank-failed-text: #991b1b;
+  --rank-failed-border: #fecaca;
+  --rank-failed-solid: #dc2626;    /* Không hoàn thành */
+
+  /* Light Mode Surface Tokens */
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #f1f5f9;
+  --bg-surface-active: #e2e8f0;
+  --bg-sidebar: #ffffff;
+  --bg-header: #ffffff;
+
+  --border-subtle: #f1f5f9;
+  --border-default: #e2e8f0;
+  --border-emphasis: #cbd5e1;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-muted: #94a3b8;
+  --text-on-primary: #ffffff;
+
+  /* Spacing Grid (Bội số 4px) */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;   /* Standard card gap & content padding */
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+
+  /* Corner Radius (8 - 12px) */
+  --radius-sm: 6px;
+  --radius-md: 8px;    /* Button, badge, input */
+  --radius-lg: 12px;   /* Card, dialog, section */
+  --radius-xl: 16px;   /* Top level containers */
+  --radius-full: 9999px;
+
+  /* Shadows (Nhẹ, mảnh, sắc nét) */
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+}
+
+/* Dark Mode Tokens */
+.dark {
+  --bg-app: #0b0f19;           /* Nền siêu trầm dịu mắt */
+  --bg-surface: #111827;       /* Nền card */
+  --bg-surface-hover: #1e293b;
+  --bg-surface-active: #334155;
+  --bg-sidebar: #0f172a;
+  --bg-header: #0f172a;
+
+  --border-subtle: #1e293b;
+  --border-default: #1f293d;
+  --border-emphasis: #334155;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --text-muted: #64748b;
+
+  --primary-600: #3b82f6; /* Sáng hơn trên dark background */
+
+  /* Dark mode fixed rankings */
+  --rank-excellent-bg: rgba(124, 58, 237, 0.15);
+  --rank-excellent-text: #c084fc;
+  --rank-excellent-border: rgba(168, 85, 247, 0.4);
+
+  --rank-good-bg: rgba(16, 185, 129, 0.15);
+  --rank-good-text: #34d399;
+  --rank-good-border: rgba(16, 185, 129, 0.4);
+
+  --rank-completed-bg: rgba(37, 99, 235, 0.15);
+  --rank-completed-text: #60a5fa;
+  --rank-completed-border: rgba(59, 130, 246, 0.4);
+
+  --rank-failed-bg: rgba(239, 68, 68, 0.15);
+  --rank-failed-text: #f87171;
+  --rank-failed-border: rgba(239, 68, 68, 0.4);
+
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
+}
+
+/* ==============================================================================
+   NUMERICAL FORMATTING & UTILITIES
+   ============================================================================== */
+
+/* Tabular Numbers: số liệu KPI luôn thẳng hàng, không bị thụt thò */
+.tabular-nums,
+[data-tabular-nums] {
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: 'tnum';
+  font-feature-settings: 'tnum';
+}
+
+/* Container & Gap Utilities */
+.page-container {
+  max-width: 1440px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px; /* Gap giữa các khối card chuẩn 24px */
+}
+
+/* Standard Section Card with 24px padding and 1px subtle border */
+.ui-section-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ui-section-card:hover {
+  border-color: var(--border-emphasis);
+  box-shadow: var(--shadow-md);
+}
+
+/* Compact Card for widgets / smaller items */
+.ui-card-compact {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-xs);
+}

@@ -1,0 +1,746 @@
+// ==============================================================================
+// PRISMA ORM SCHEMA: DUAL-MODE KPI & CIVIL SERVANT ASSESSMENT SYSTEM
+// Designed for Enterprise (KPI/OKR/BSC/360°) and Public Sector (NĐ 90/2020 & 48/2023)
+// ==============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------------------------
+
+enum OperatingMode {
+  ENTERPRISE  // Doanh nghiệp: KPI, OKR, BSC, 360, lương thưởng
+  GOVERNMENT  // Cơ quan Nhà nước: NĐ 90/2020/NĐ-CP & NĐ 48/2023/NĐ-CP
+  HYBRID      // Đa mô hình kết hợp
+}
+
+enum EmployeeType {
+  CAN_BO               // Cán bộ (bầu cử, phê chuẩn theo nhiệm kỳ)
+  CONG_CHUC             // Công chức (tuyển dụng, bổ nhiệm vào ngạch)
+  VIEN_CHUC             // Viên chức (làm việc tại đơn vị sự nghiệp)
+  NHAN_VIEN_HOP_DONG   // Nhân viên hợp đồng (theo NĐ 111/2022/NĐ-CP)
+  DOANH_NGHIEP         // Nhân sự theo HĐ lao động doanh nghiệp
+}
+
+enum ContractType {
+  KHONG_XAC_DINH_THOI_HAN  // Hợp đồng không xác định thời hạn / Biên chế
+  XAC_DINH_THOI_HAN        // Hợp đồng làm việc 12 - 36 tháng
+  HOP_DONG_111             // Hợp đồng theo Nghị định 111/2022/NĐ-CP
+  THU_VIEC                 // Tập sự / Thử việc
+}
+
+enum RoleType {
+  SUPER_ADMIN       // Quản trị viên hệ thống tối cao
+  HR_ADMIN          // Quản trị Nhân sự / Vụ Tổ chức Cán bộ
+  HEAD_OF_AGENCY    // Người đứng đầu cơ quan / Tổng Giám đốc
+  DEPT_HEAD         // Trưởng đơn vị / Trưởng phòng
+  DEPT_DEPUTY       // Phó phòng / Cấp phó
+  EMPLOYEE          // Cán bộ, công chức, viên chức, nhân viên
+  COUNCIL_MEMBER    // Thành viên Hội đồng thi đua khen thưởng
+}
+
+enum DataScopeType {
+  ALL                      // Toàn quyền xem toàn hệ thống
+  DEPARTMENT_AND_CHILDREN  // Đơn vị và các cấp trực thuộc
+  DEPARTMENT_ONLY          // Chỉ nội bộ đơn vị
+  SELF_ONLY                // Chỉ xem dữ liệu bản thân
+}
+
+enum PeriodType {
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+}
+
+enum PeriodStatus {
+  DRAFT
+  PLANNING
+  ASSIGNING      // Giao KPI
+  IN_PROGRESS    // Đang thực hiện
+  EVALUATING     // Đang đánh giá
+  REVIEWING      // Đang xem xét
+  LOCKED         // Đã khóa
+  ARCHIVED       // Lưu trữ
+}
+
+enum KpiType {
+  QUANTITATIVE   // Định lượng (đo đếm bằng số liệu, tỷ lệ %, tiền...)
+  QUALITATIVE    // Định tính (đánh giá theo mức độ, chất lượng)
+  BINARY         // Đạt / Không đạt (hoàn thành hoặc chưa hoàn thành)
+  MILESTONE      // Theo mốc thời gian (deadline, tiến độ dự án)
+}
+
+enum ScoringMethod {
+  LINEAR             // Tuyến tính: (thực tế / mục tiêu) * 100
+  STEP               // Bậc thang: theo dải phân chia điểm
+  BINARY_PASS_FAIL   // Đạt / Không đạt
+}
+
+enum TargetDirection {
+  HIGHER_IS_BETTER   // Càng cao càng tốt (Doanh thu, sản lượng, tỷ lệ đúng hạn)
+  LOWER_IS_BETTER    // Càng thấp càng tốt (Tỷ lệ lỗi, chi phí phát sinh, thời gian chờ)
+}
+
+enum KpiAssignmentStatus {
+  DRAFT               // Bản nháp
+  ASSIGNED            // Quản lý đã giao
+  FEEDBACK_REQUESTED  // Nhân viên phản hồi / đề nghị điều chỉnh
+  ACCEPTED            // Nhân viên đã xác nhận đồng thuận
+  APPROVED            // Quản lý duyệt chốt
+  LOCKED              // Đã khóa chỉ tiêu
+}
+
+enum EvaluationStatus {
+  DRAFT
+  SELF_EVALUATED
+  COLLECTIVE_REVIEW
+  MANAGER_ASSESSED
+  COUNCIL_APPRAISED
+  HEAD_APPROVED
+  PUBLISHED
+  REJECTED
+}
+
+enum GovClassification {
+  HOAN_THANH_XUAT_SAC  // Hoàn thành xuất sắc nhiệm vụ (khống chế <= 20% mức Tốt)
+  HOAN_THANH_TOT       // Hoàn thành tốt nhiệm vụ
+  HOAN_THANH           // Hoàn thành nhiệm vụ
+  KHONG_HOAN_THANH     // Không hoàn thành nhiệm vụ
+}
+
+enum ReviewerType {
+  SELF
+  DIRECT_MANAGER
+  COLLECTIVE_PEER
+  SUBORDINATE
+  CROSS_DEPT_CLIENT
+  HEAD_OF_AGENCY
+  COUNCIL
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  SUBMIT
+  APPROVE
+  REJECT
+  LOCK_PERIOD
+  UNLOCK_PERIOD
+  LOGIN
+  LOGOUT
+  EXPORT_REPORT
+  OVERRIDE_QUOTA
+  IMPORT_EXCEL
+  RESET_PASSWORD
+  ASSIGN_KPI
+  REVISE_KPI
+  ACCEPT_KPI
+  APPROVE_KPI
+  LOCK_KPI
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  DEADLINE
+  EVALUATION_REQUEST
+}
+
+// ------------------------------------------------------------------------------
+// ORGANIZATIONAL STRUCTURE (CÂY ĐƠN VỊ HÀNH CHÍNH & VỊ TRÍ VIỆC LÀM)
+// ------------------------------------------------------------------------------
+
+model Department {
+  id            String        @id @default(uuid())
+  code          String        @unique
+  name          String
+  level         Int           // 1: Bộ/Tập đoàn, 2: Cục/Khối, 3: Vụ/Phòng, 4: Tổ/Đội
+  levelName     String?       // Tên gọi cấp bậc hiển thị
+  parentId      String?
+  path          String        // Chuỗi phân cấp cây: "/root/dept-01/dept-01-01"
+  operatingMode OperatingMode @default(HYBRID)
+  managerId     String?
+  description   String?
+  headcount     Int           @default(0)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  parent        Department?   @relation("DeptHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children      Department[]  @relation("DeptHierarchy")
+
+  positions     Position[]
+  users         User[]
+  evaluations   EvaluationRecord[]
+  kpiTemplates  KpiTemplate[]
+  kpiAssignments KpiAssignment[]
+
+  @@index([parentId])
+  @@index([path])
+  @@map("departments")
+}
+
+model Position {
+  id               String       @id @default(uuid())
+  code             String       @unique
+  name             String       // Tên chức danh / Vị trí việc làm
+  departmentId     String?
+  isLeadership     Boolean      @default(false) // Là vị trí lãnh đạo, quản lý
+  jobFamily        String?      // Nhóm chuyên môn (CNTT, Pháp chế, Kế toán, Tổng hợp)
+  civilServantRank String?      // Ngạch tiêu chuẩn: Chuyên viên cao cấp, Chuyên viên chính, Chuyên viên
+  description      String?
+  requirements     String?      // Tiêu chuẩn, điều kiện bổ nhiệm
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  department       Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  users            User[]
+  kpiTemplates     KpiTemplate[]
+
+  @@map("positions")
+}
+
+// ------------------------------------------------------------------------------
+// USERS, EMPLOYEES & RBAC
+// ------------------------------------------------------------------------------
+
+model User {
+  id                 String             @id @default(uuid())
+  employeeCode       String?            @unique // Mã số cán bộ / thẻ công chức
+  username           String             @unique
+  email              String             @unique
+  passwordHash       String
+  fullName           String
+  avatarUrl          String?
+  phone              String?
+  idCardNumber       String?            // Số CCCD / Hộ chiếu
+  joinedAt           DateTime?          // Ngày vào cơ quan / tiếp nhận
+  employeeType       EmployeeType       @default(CONG_CHUC)
+  cadreRank          String?            // Ngạch công chức/viên chức thực tế
+  contractType       ContractType       @default(KHONG_XAC_DINH_THOI_HAN)
+  salaryCoefficient  Float?             @default(2.34) // Hệ số lương khởi điểm
+  departmentId       String
+  positionId         String
+  isActive           Boolean            @default(true)
+  isTwoFactorEnabled Boolean            @default(false)
+  twoFactorSecret    String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  department         Department         @relation(fields: [departmentId], references: [id])
+  position           Position           @relation(fields: [positionId], references: [id])
+  roles              UserRole[]
+  refreshTokens      RefreshToken[]
+  resetTokens        PasswordResetToken[]
+  notifications      Notification[]
+  attachmentsUploaded Attachment[]      @relation("UserAttachments")
+  evaluations        EvaluationRecord[] @relation("UserEvaluations")
+  approvedRecords    EvaluationRecord[] @relation("HeadDecisionRecords")
+  reviewsGiven       ReviewFeedback[]
+  itemScoresGiven    EvaluationItemScore[]
+  lockAuthorizations PeriodLockHistory[]
+  auditLogs          AuditLog[]
+  kpiAssignments     KpiAssignment[]      @relation("UserKpiAssignments")
+  assignedKpis       KpiAssignment[]      @relation("ManagerAssignedKpis")
+  kpiRevisions       KpiRevisionHistory[]
+
+  @@index([departmentId])
+  @@index([positionId])
+  @@index([employeeType])
+  @@map("users")
+}
+
+model Role {
+  id          String         @id @default(uuid())
+  code        RoleType       @unique
+  name        String
+  description String?
+  dataScope   DataScopeType  @default(DEPARTMENT_ONLY)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  code        String           @unique
+  name        String
+  resource    String
+  action      String
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ------------------------------------------------------------------------------
+// NOTIFICATIONS & ATTACHMENTS (MINH CHỨNG & THÔNG BÁO)
+// ------------------------------------------------------------------------------
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  title     String
+  content   String
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false)
+  linkUrl   String?
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model Attachment {
+  id           String   @id @default(uuid())
+  fileName     String
+  fileUrl      String   // Đường dẫn tải file trên MinIO / S3
+  fileSize     Int      // Kích thước bytes
+  mimeType     String   // E.g., application/pdf, image/png
+  entityName   String   // "EvaluationRecord", "CriteriaItem", "Department"
+  entityId     String
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  uploadedBy   User     @relation("UserAttachments", fields: [uploadedById], references: [id])
+
+  @@index([entityName, entityId])
+  @@index([uploadedById])
+  @@map("attachments")
+}
+
+// ------------------------------------------------------------------------------
+// ASSESSMENT PERIOD & LOCKING ENGINE
+// ------------------------------------------------------------------------------
+
+model AssessmentPeriod {
+  id                 String         @id @default(uuid())
+  code               String         @unique
+  name               String
+  periodType         PeriodType     @default(ANNUAL)
+  startDate          DateTime
+  endDate            DateTime
+  evaluationDeadline DateTime
+  status             PeriodStatus   @default(DRAFT)
+  operatingMode      OperatingMode  @default(HYBRID)
+  isLocked           Boolean        @default(false)
+  lockedAt           DateTime?
+  lockedById         String?
+
+  rulesConfig        Json           @default("{\"maxExcellentPercentage\": 20, \"quotaPolicy\": \"WARNING_WITH_JUSTIFICATION\", \"allowSelfRating\": true}")
+  weightMatrix       Json           @default("{\"SELF\": 10, \"DIRECT_MANAGER\": 60, \"COLLECTIVE_PEER\": 30}")
+
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  lockHistories      PeriodLockHistory[]
+  templates          CriteriaTemplate[]
+  evaluations        EvaluationRecord[]
+  kpiAssignments     KpiAssignment[]
+
+  @@map("assessment_periods")
+}
+
+model PeriodLockHistory {
+  id             String           @id @default(uuid())
+  periodId       String
+  isLocked       Boolean
+  reason         String           // Lý do khóa/mở khóa bắt buộc
+  authorizedById String
+  snapshotData   Json?
+  createdAt      DateTime         @default(now())
+
+  period         AssessmentPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  authorizedBy   User             @relation(fields: [authorizedById], references: [id])
+
+  @@index([periodId])
+  @@map("period_lock_histories")
+}
+
+// ------------------------------------------------------------------------------
+// CRITERIA TEMPLATE & EVALUATION RECORDS
+// ------------------------------------------------------------------------------
+
+model CriteriaTemplate {
+  id             String             @id @default(uuid())
+  periodId       String?
+  code           String             @unique
+  name           String
+  operatingMode  OperatingMode      @default(GOVERNMENT)
+  targetAudience String?           // "LEADERSHIP" hoặc "NON_LEADERSHIP"
+  description    String?
+  isActive       Boolean            @default(true)
+  version        Int                @default(1)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  period         AssessmentPeriod?  @relation(fields: [periodId], references: [id], onDelete: SetNull)
+  items          CriteriaItem[]
+
+  @@map("criteria_templates")
+}
+
+model CriteriaItem {
+  id           String              @id @default(uuid())
+  templateId   String
+  code         String
+  name         String
+  groupName    String
+  description  String?
+  weight       Float               @default(1.0)
+  targetValue  String?
+  unit         String?
+  scoringType  String              @default("SCORE_SCALE")
+  minScore     Float               @default(0)
+  maxScore     Float               @default(100)
+  sortOrder    Int                 @default(0)
+  isMandatory  Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  template     CriteriaTemplate    @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  scores       EvaluationItemScore[]
+
+  @@unique([templateId, code])
+  @@index([templateId])
+  @@map("criteria_items")
+}
+
+model EvaluationRecord {
+  id                   String             @id @default(uuid())
+  periodId             String
+  userId               String
+  departmentId         String
+  operatingMode        OperatingMode      @default(GOVERNMENT)
+  status               EvaluationStatus   @default(DRAFT)
+
+  selfScore            Float?
+  managerScore         Float?
+  collectiveScore      Float?
+  councilScore         Float?
+  finalScore           Float?
+
+  govClassification    GovClassification?
+  enterpriseGrade      String?
+  salaryMultiplier     Float?             @default(1.0)
+
+  headDecisionById     String?
+  headDecisionAt       DateTime?
+  headComments         String?
+  quotaOverrideReason  String?
+
+  selfAssessmentText   String?
+  collectiveReviewText String?
+  managerReviewText    String?
+
+  isLocked             Boolean            @default(false)
+  submittedAt          DateTime?
+  approvedAt           DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  period               AssessmentPeriod   @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  user                 User               @relation("UserEvaluations", fields: [userId], references: [id], onDelete: Cascade)
+  department           Department         @relation(fields: [departmentId], references: [id])
+  headDecisionBy       User?              @relation("HeadDecisionRecords", fields: [headDecisionById], references: [id])
+
+  itemScores           EvaluationItemScore[]
+  feedbacks            ReviewFeedback[]
+
+  @@unique([periodId, userId])
+  @@index([periodId])
+  @@index([userId])
+  @@index([departmentId])
+  @@map("evaluation_records")
+}
+
+model EvaluationItemScore {
+  id             String           @id @default(uuid())
+  evaluationId   String
+  criteriaItemId String
+  reviewerType   ReviewerType
+  reviewerId     String
+  score          Float
+  note           String?
+  proofFileUrl   String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  evaluation     EvaluationRecord @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  criteriaItem   CriteriaItem     @relation(fields: [criteriaItemId], references: [id], onDelete: Cascade)
+  reviewer       User             @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([evaluationId])
+  @@index([criteriaItemId])
+  @@index([reviewerId])
+  @@map("evaluation_item_scores")
+}
+
+model ReviewFeedback {
+  id                 String           @id @default(uuid())
+  evaluationId       String
+  reviewerId         String
+  reviewerType       ReviewerType
+  score              Float?
+  prosText           String?
+  consText           String?
+  recommendationText String?
+  submittedAt        DateTime         @default(now())
+
+  evaluation         EvaluationRecord @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  reviewer           User             @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([evaluationId])
+  @@index([reviewerId])
+  @@map("review_feedbacks")
+}
+
+// ------------------------------------------------------------------------------
+// AUDIT LOG SYSTEM (BẢNG GHI KIỂM TOÁN BẤT BIẾN)
+// ------------------------------------------------------------------------------
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  userId     String?
+  username   String?
+  action     AuditAction
+  entityName String
+  entityId   String
+  oldValues  Json?
+  newValues  Json?
+  reason     String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entityName, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ------------------------------------------------------------------------------
+// KPI LIBRARY, TEMPLATES & CASCADE ASSIGNMENTS (PHASE 2)
+// ------------------------------------------------------------------------------
+
+model KpiLibrary {
+  id              String          @id @default(uuid())
+  code            String          @unique
+  name            String
+  category        String          // Tài chính, Khách hàng, Quy trình, BSC, NĐ 90/48...
+  kpiType         KpiType         @default(QUANTITATIVE)
+  unit            String          // %, Triệu đồng, Giờ, Đầu việc...
+  targetDirection TargetDirection @default(HIGHER_IS_BETTER)
+  defaultWeight   Float           @default(10)
+  defaultTarget   Float?
+  minThreshold    Float?
+  maxThreshold    Float?
+  scoringMethod   ScoringMethod   @default(LINEAR)
+  formulaConfig   Json?           // Cấu hình các tiers bậc thang, bonus, penalty
+  description     String?
+  guidance        String?
+  departmentId    String?
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  templateItems   KpiTemplateItem[]
+  assignmentItems KpiAssignmentItem[]
+
+  @@map("kpi_libraries")
+}
+
+model KpiTemplate {
+  id           String            @id @default(uuid())
+  code         String            @unique
+  name         String
+  positionId   String?           // Gắn với vị trí việc làm / chức danh
+  departmentId String?           // Gắn với đơn vị cụ thể hoặc toàn hệ thống
+  description  String?
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  position     Position?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  department   Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  items        KpiTemplateItem[]
+
+  @@map("kpi_templates")
+}
+
+model KpiTemplateItem {
+  id              String          @id @default(uuid())
+  templateId      String
+  kpiLibraryId    String?
+  code            String
+  name            String
+  kpiType         KpiType         @default(QUANTITATIVE)
+  unit            String
+  targetDirection TargetDirection @default(HIGHER_IS_BETTER)
+  weight          Float           @default(10)
+  targetValue     Float           @default(100)
+  minThreshold    Float?
+  maxThreshold    Float?
+  scoringMethod   ScoringMethod   @default(LINEAR)
+  formulaConfig   Json?
+  sortOrder       Int             @default(0)
+
+  template        KpiTemplate     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  libraryItem     KpiLibrary?     @relation(fields: [kpiLibraryId], references: [id], onDelete: SetNull)
+
+  @@index([templateId])
+  @@map("kpi_template_items")
+}
+
+model KpiAssignment {
+  id           String              @id @default(uuid())
+  periodId     String
+  departmentId String?             // Bảng KPI giao cho Đơn vị
+  userId       String?             // Bảng KPI giao cho Cá nhân
+  assignedById String?             // Người giao (Trưởng phòng/Lãnh đạo)
+  status       KpiAssignmentStatus @default(DRAFT)
+  version      Int                 @default(1)
+  totalWeight  Float               @default(100)
+  feedbackText String?             // Ý kiến phản hồi / từ chối của người nhận
+  approvedAt   DateTime?
+  lockedAt     DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  period       AssessmentPeriod    @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  department   Department?         @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  user         User?               @relation("UserKpiAssignments", fields: [userId], references: [id], onDelete: Cascade)
+  assignedBy   User?               @relation("ManagerAssignedKpis", fields: [assignedById], references: [id], onDelete: SetNull)
+  items        KpiAssignmentItem[]
+  revisions    KpiRevisionHistory[]
+
+  @@unique([periodId, userId])
+  @@index([periodId])
+  @@index([departmentId])
+  @@index([userId])
+  @@map("kpi_assignments")
+}
+
+model KpiAssignmentItem {
+  id              String              @id @default(uuid())
+  assignmentId    String
+  parentKpiId     String?             // Khóa ngoại liên kết KPI cha (Cây cascade từ trên xuống)
+  kpiLibraryId    String?
+  code            String
+  name            String
+  description     String?
+  kpiType         KpiType             @default(QUANTITATIVE)
+  unit            String              @default("%")
+  targetDirection TargetDirection     @default(HIGHER_IS_BETTER)
+  weight          Float               @default(10)
+  targetValue     Float               @default(100)
+  minThreshold    Float?
+  maxThreshold    Float?
+  scoringMethod   ScoringMethod       @default(LINEAR)
+  formulaConfig   Json?
+  actualValue     Float?
+  bonusPoints     Float               @default(0)
+  penaltyPoints   Float               @default(0)
+  calculatedScore Float?
+  weightedScore   Float?
+  sortOrder       Int                 @default(0)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  assignment      KpiAssignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  parentKpi       KpiAssignmentItem?  @relation("KpiCascade", fields: [parentKpiId], references: [id], onDelete: SetNull)
+  childKpis       KpiAssignmentItem[] @relation("KpiCascade")
+  libraryItem     KpiLibrary?         @relation(fields: [kpiLibraryId], references: [id], onDelete: SetNull)
+
+  @@index([assignmentId])
+  @@index([parentKpiId])
+  @@map("kpi_assignment_items")
+}
+
+model KpiRevisionHistory {
+  id           String        @id @default(uuid())
+  assignmentId String
+  version      Int
+  reason       String        // Lý do điều chỉnh giữa kỳ bắt buộc
+  changedById  String
+  snapshotData Json          // Lưu vết toàn bộ dữ liệu KPI tại thời điểm trước khi sửa
+  createdAt    DateTime      @default(now())
+
+  assignment   KpiAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  changedBy    User          @relation(fields: [changedById], references: [id])
+
+  @@index([assignmentId])
+  @@index([changedById])
+  @@map("kpi_revision_histories")
+}

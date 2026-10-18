@@ -1,0 +1,76 @@
+name: KPI System CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-lint:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: kpi_test
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: kpi_test_db
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Monorepo Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
+      - name: Run Backend Unit Tests (NestJS)
+        run: npm run api:test
+        env:
+          DATABASE_URL: postgresql://kpi_test:test_password@localhost:5432/kpi_test_db?schema=public
+          JWT_SECRET: test_jwt_secret_key_ci_cd_environment
+
+      - name: Build Frontend (Vite)
+        run: npm run build
+
+      - name: Build Backend (NestJS)
+        run: npm run api:build
+
+  docker-build:
+    name: Docker Production Build
+    needs: test-and-lint
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Production Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: kpi-system:latest

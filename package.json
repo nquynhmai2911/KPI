@@ -1,0 +1,44 @@
+{
+  "name": "kpi-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "api:start": "npm --prefix apps/api run start",
+    "api:dev": "npm --prefix apps/api run start:dev",
+    "api:build": "npm --prefix apps/api run build",
+    "api:test": "npm --prefix apps/api run test",
+    "db:generate": "npm --prefix packages/database run prisma:generate",
+    "db:migrate": "npm --prefix packages/database run prisma:migrate",
+    "db:seed": "npm --prefix packages/database run prisma:seed",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.4.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "lucide-react": "^1.55.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-is": "^19.3.0",
+    "recharts": "^3.10.1",
+    "tailwindcss": "^4.3.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.81.0",
+    "prisma": "^6.4.1",
+    "typescript": "^5.7.3",
+    "vite": "^8.3.0"
+  }
+}
