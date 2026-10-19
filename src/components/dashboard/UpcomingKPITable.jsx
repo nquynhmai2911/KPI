@@ -130,10 +130,10 @@ export const UpcomingKPITable = () => {
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900 tabular-nums">
-                Trọng số: {weightVal}%
+                {weightVal}%
               </span>
               <span className="text-xs font-mono font-medium text-slate-500 dark:text-slate-400">
-                • Mã: {taskCode}
+                {taskCode}
               </span>
               {categoryName && (
                 <span className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:inline">
@@ -310,13 +310,8 @@ export const UpcomingKPITable = () => {
         />
 
         <div className="flex items-center gap-2 self-end lg:self-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSimulateReload}
-            icon={RefreshCw}
-          >
-            Làm mới ({filteredData.length})
+          <Button variant="ghost" size="icon" onClick={handleSimulateReload} title="Làm mới" aria-label="Làm mới">
+            <RefreshCw size={16} />
           </Button>
         </div>
       </div>
@@ -335,7 +330,7 @@ export const UpcomingKPITable = () => {
         pageSizeOptions={[8, 15, 30]}
         defaultPageSize={8}
         searchable={true}
-        searchPlaceholder="Tìm theo tên công việc, mã TSK, cán bộ, đơn vị..."
+        searchPlaceholder="Tìm công việc, mã, cán bộ..."
         searchKeys={['name', 'code', 'category']}
         columnVisibilityToggle={true}
         emptyTitle="Không có chỉ tiêu nào"
