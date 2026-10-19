@@ -22,6 +22,9 @@ import {
   Target,
   Sparkles,
   Search,
+  BarChart3,
+  Building2,
+  PieChart as PieChartIcon,
 } from 'lucide-react';
 import {
   BarChart,
@@ -40,6 +43,9 @@ import {
 import { PageHeader } from '../../common/PageHeader';
 import { SectionCard } from '../../common/SectionCard';
 import { StatCard } from '../../common/StatCard';
+import { EXCELLENT_QUOTA_INFO, getRankStats } from '../../../utils/labels';
+import { DepartmentKPIChart } from '../../dashboard/DepartmentKPIChart';
+import { RankDistributionChart } from '../../dashboard/RankDistributionChart';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { SegmentedControl } from '../../ui/SegmentedControl';
@@ -66,36 +72,19 @@ export const Module5_DashboardsReports = () => {
   // Plans in active period
   const periodPlans = kpiPlans.filter((p) => p.periodId === activePeriod.id);
 
-  // Metrics
-  const totalEvaluated = periodPlans.length;
-  const countExcellent = periodPlans.filter((p) => p.finalRank === 'XUẤT SẮC').length;
-  const countGood = periodPlans.filter((p) => p.finalRank === 'TỐT').length;
-  const countCompleted = periodPlans.filter((p) => p.finalRank === 'HOÀN THÀNH').length;
-  const countFailed = periodPlans.filter((p) => p.finalRank === 'KHÔNG HOÀN THÀNH').length;
-
-  const rateExcellent = totalEvaluated > 0 ? Math.round((countExcellent / totalEvaluated) * 1000) / 10 : 0;
-  const avgOrgScore =
-    totalEvaluated > 0
-      ? Math.round(
-          (periodPlans.reduce((sum, p) => sum + (p.finalScore || 88), 0) / totalEvaluated) * 10
-        ) / 10
-      : 88.6;
+  const rankStats = getRankStats(periodPlans);
+  const { quota } = rankStats;
+  const countExcellent = rankStats.counts.EXCELLENT;
+  const countFailed = rankStats.counts.FAILED;
+  const rateExcellent = rankStats.evaluated ? Math.round((countExcellent / rankStats.evaluated) * 1000) / 10 : 0;
+  const avgOrgScore = rankStats.avgScore;
 
   // Multi-period historical trend data
   const multiPeriodTrendData = [
     { period: 'Q1/2026', avgScore: 84.2, completionRate: 88.5, excellentRate: 16.5 },
     { period: 'Q2/2026', avgScore: 86.8, completionRate: 90.2, excellentRate: 18.0 },
     { period: 'Q3/2026', avgScore: 87.5, completionRate: 91.4, excellentRate: 19.2 },
-    { period: 'Q4/2026 (Hiện tại)', avgScore: avgOrgScore, completionRate: 92.4, excellentRate: rateExcellent },
-  ];
-
-  // Department Benchmark Ranking Data
-  const departmentRankings = [
-    { name: 'Văn phòng Lãnh đạo', count: 18, avgScore: 94.5, rank: 'XUẤT SẮC', onTimeRate: 98 },
-    { name: 'Khối Công nghệ & Số hóa', count: 52, avgScore: 92.0, rank: 'TỐT', onTimeRate: 96 },
-    { name: 'Khối Tổ chức Cán bộ', count: 22, avgScore: 91.2, rank: 'TỐT', onTimeRate: 95 },
-    { name: 'Khối Kế hoạch - Tài chính', count: 28, avgScore: 88.4, rank: 'TỐT', onTimeRate: 92 },
-    { name: 'Khối Kinh doanh & Dịch vụ', count: 25, avgScore: 84.0, rank: 'HOÀN THÀNH', onTimeRate: 88 },
+    { period: 'Q4/2026', avgScore: avgOrgScore, completionRate: 92.4, excellentRate: rateExcellent },
   ];
 
   // Reward Proposals (Danh sách đề xuất khen thưởng)
@@ -112,7 +101,7 @@ export const Module5_DashboardsReports = () => {
       const multiplier = p.finalRank === 'XUẤT SẮC' ? 1.5 : p.finalRank === 'TỐT' ? 1.2 : p.finalRank === 'HOÀN THÀNH' ? 1.0 : 0.0;
       const baseSalary = 18000000;
       const bonus = Math.round(baseSalary * multiplier);
-      csvContent += `"${idx + 1}","${p.employeeName}","${p.positionTitle}","${p.departmentName}","${activePeriod.name}","${p.items?.length || 0}","${p.totalWeight}%","${p.overallManagerScore || 88}","${p.peerScoreAvg || 90}","${p.finalScore || 88}","${p.finalRank || 'TỐT'}","${multiplier}x","${bonus.toLocaleString('vi-VN')}"\n`;
+      csvContent += `"${idx + 1}","${p.employeeName}","${p.positionTitle}","${p.departmentName}","${activePeriod.name}","${p.items?.length || 0}","${p.totalWeight}%","${p.overallManagerScore ?? ''}","${p.peerScoreAvg ?? ''}","${p.finalScore || ''}","${p.finalRank || ''}","${multiplier}x","${bonus.toLocaleString('vi-VN')}"\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -124,99 +113,58 @@ export const Module5_DashboardsReports = () => {
     link.click();
     document.body.removeChild(link);
 
-    showToast('Đã xuất file báo cáo tổng hợp KPI định dạng Excel/CSV thành công!');
+    showToast('Đã xuất báo cáo Excel!');
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        breadcrumbs={[
-          { label: 'Trang chủ', onClick: () => {} },
-          { label: 'Báo cáo & Kết quả' },
-          {
-            label:
-              activeTab === 'executive'
-                ? 'Dashboard Lãnh đạo'
-                : activeTab === 'reports'
-                ? 'Báo cáo chuyên sâu'
-                : activeTab === 'multi-period'
-                ? 'Xu hướng nhiều kỳ'
-                : activeTab === 'bonus-salary'
-                ? 'Lương thưởng & Quy hoạch'
-                : 'Mẫu in & Xuất file',
-          },
-        ]}
-        title={
+        icon={BarChart3}
+        title="Kết quả & báo cáo"
+        subtitle={
           systemOperatingMode === 'GOVERNMENT'
-            ? 'Báo cáo Tổng hợp & Sử dụng Kết quả Đánh giá (NĐ 90/2020)'
-            : 'Báo cáo Hiệu suất Toàn diện & Quản trị Lương thưởng KPI'
-        }
-        subtitle="Tổng hợp kết quả đánh giá nhiều kỳ, phân bổ xếp loại, tính quỹ thưởng KPI và phục vụ quy hoạch cán bộ"
-        badge={
-          <Badge variant="primary" dot>
-            Kỳ: {activePeriod?.name || 'Q4/2026'}
-          </Badge>
+            ? 'Công bố kết quả xếp loại, tổng hợp theo đơn vị, theo dõi nhiều kỳ và sử dụng kết quả cho thi đua khen thưởng, quy hoạch, bổ nhiệm (Nghị định 90/2020).'
+            : 'Tổng hợp kết quả hiệu suất, so sánh đơn vị, theo dõi nhiều kỳ và tính thưởng theo KPI.'
         }
         actions={
-          <SegmentedControl
-            options={[
-              { value: 'executive', label: 'Dashboard Lãnh đạo', icon: LayoutDashboard },
-              { value: 'reports', label: 'Báo cáo tổng hợp', icon: FileSpreadsheet },
-              { value: 'multi-period', label: 'Lịch sử nhiều kỳ', icon: TrendingUp },
-              {
-                value: 'bonus-salary',
-                label: systemOperatingMode === 'GOVERNMENT' ? 'Quy hoạch & Bổ nhiệm' : 'Lương thưởng KPI',
-                icon: systemOperatingMode === 'GOVERNMENT' ? Briefcase : DollarSign,
-              },
-              { value: 'export-templates', label: 'Mẫu In / PDF', icon: Printer },
-            ]}
-            value={activeTab}
-            onChange={(val) => setActiveTab(val)}
-            size="md"
-          />
+          <Button variant="outline" size="sm" icon={Download} onClick={() => handleExportCSV('ALL')}>
+            Xuất Excel
+          </Button>
         }
       />
 
-      {/* 4 StatCards Vĩ mô */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <SegmentedControl
+        options={[
+          { value: 'executive', label: 'Tổng quan', icon: LayoutDashboard },
+          { value: 'reports', label: 'Danh sách xếp loại', icon: FileSpreadsheet },
+          { value: 'multi-period', label: 'Nhiều kỳ', icon: TrendingUp },
+          {
+            value: 'bonus-salary',
+            label: systemOperatingMode === 'GOVERNMENT' ? 'Quy hoạch' : 'Thưởng KPI',
+            icon: systemOperatingMode === 'GOVERNMENT' ? Briefcase : DollarSign,
+          },
+          { value: 'export-templates', label: 'Mẫu in', icon: Printer },
+        ]}
+        value={activeTab}
+        onChange={(val) => setActiveTab(val)}
+      />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <StatCard label="Điểm trung bình" value={avgOrgScore} unit="điểm" icon={Award} color="primary" />
         <StatCard
-          label="Điểm trung bình toàn cơ quan"
-          value={avgOrgScore}
-          unit="điểm"
-          trend="+3.2%"
-          trendDirection="up"
-          subtext="Mức xếp loại chung: Tốt (Loại B)"
-          icon={Award}
-          color="primary"
-        />
-        <StatCard
-          label="Tỷ lệ Hoàn thành xuất sắc"
-          value={rateExcellent}
-          unit="%"
-          trend={rateExcellent <= 20 ? 'Chuẩn NĐ 90' : 'Vượt trần 20%'}
-          trendDirection={rateExcellent <= 20 ? 'up' : 'down'}
-          subtext="Quy chuẩn khống chế tối đa 20%"
+          label="Xuất sắc"
+          value={countExcellent}
+          unit={`/ ${quota.maxAllowed} tối đa`}
           icon={CheckCircle2}
-          color={rateExcellent <= 20 ? 'success' : 'warning'}
+          color={quota.withinQuota ? 'success' : 'danger'}
+          subtext={EXCELLENT_QUOTA_INFO}
         />
+        <StatCard label="Đề xuất khen thưởng" value={rewardList.length} unit="người" icon={Sparkles} color="info" />
         <StatCard
-          label="Cán bộ đề xuất khen thưởng"
-          value={rewardList.length}
-          unit="cán bộ"
-          trend="+2 cán bộ"
-          trendDirection="up"
-          subtext="Đạt danh hiệu CSTĐ cơ sở"
-          icon={Sparkles}
-          color="info"
-        />
-        <StatCard
-          label="Không hoàn thành nhiệm vụ"
+          label="Không hoàn thành"
           value={countFailed}
-          unit="cán bộ"
-          trend={countFailed === 0 ? '0%' : 'Cần đào tạo lại'}
-          trendDirection={countFailed === 0 ? 'up' : 'down'}
-          subtext="Cần bố trí công tác phù hợp"
+          unit="người"
           icon={AlertTriangle}
           color={countFailed > 0 ? 'danger' : 'success'}
         />
@@ -228,75 +176,12 @@ export const Module5_DashboardsReports = () => {
       {activeTab === 'executive' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Department Benchmark Comparison */}
-            <div className="lg:col-span-2">
-              <SectionCard
-                title="Bảng Xếp hạng Hiệu suất giữa các Khối / Phòng ban Đơn vị"
-                description="So sánh điểm trung bình KPI và tỷ lệ hoàn thành đúng hạn giữa các đơn vị trực thuộc"
-              >
-                <div className="space-y-3">
-                  {departmentRankings.map((dept, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
-                          idx === 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                        }`}>
-                          {idx + 1}
-                        </span>
-                        <div>
-                          <strong className="text-sm text-slate-900 dark:text-slate-100">{dept.name}</strong>
-                          <div className="text-slate-400">Quy mô: {dept.count} cán bộ • Đúng hạn: {dept.onTimeRate}%</div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <span className="text-slate-500">Điểm trung bình:</span>
-                          <div className="font-bold text-primary-600 tabular-nums">{dept.avgScore} điểm</div>
-                        </div>
-                        <Badge variant={dept.rank === 'XUẤT SẮC' ? 'excellent' : dept.rank === 'TỐT' ? 'good' : 'completed'}>
-                          {dept.rank}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
-            </div>
-
-            {/* Quota Distribution Alert */}
-            <div className="lg:col-span-1">
-              <SectionCard
-                title="Tỷ lệ Phân bổ Xếp loại Cơ quan"
-                description="Đảm bảo tuân thủ Nghị định 90/2020 và chuẩn Bell Curve"
-              >
-                <div className="space-y-3 text-xs">
-                  <div className="flex justify-between items-center p-2.5 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200">
-                    <span>Xuất sắc (Loại A):</span>
-                    <strong className="tabular-nums">{countExcellent} cán bộ ({rateExcellent}%)</strong>
-                  </div>
-                  <div className="flex justify-between items-center p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200">
-                    <span>Hoàn thành tốt (Loại B):</span>
-                    <strong className="tabular-nums">{countGood} cán bộ ({totalEvaluated > 0 ? Math.round((countGood / totalEvaluated) * 100) : 0}%)</strong>
-                  </div>
-                  <div className="flex justify-between items-center p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200">
-                    <span>Hoàn thành nhiệm vụ (Loại C):</span>
-                    <strong className="tabular-nums">{countCompleted} cán bộ ({totalEvaluated > 0 ? Math.round((countCompleted / totalEvaluated) * 100) : 0}%)</strong>
-                  </div>
-                  <div className="flex justify-between items-center p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200">
-                    <span>Không hoàn thành (Loại D):</span>
-                    <strong className="tabular-nums">{countFailed} cán bộ ({totalEvaluated > 0 ? Math.round((countFailed / totalEvaluated) * 100) : 0}%)</strong>
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed border border-slate-200 dark:border-slate-700">
-                    ✓ Tỷ lệ xuất sắc {rateExcellent}% đạt quy chuẩn trần tối đa 20% theo quy định tại Nghị định 90/2020/NĐ-CP.
-                  </div>
-                </div>
-              </SectionCard>
-            </div>
+            <SectionCard className="lg:col-span-2" icon={Building2} title="Theo đơn vị" description="Tiến độ trung bình các chỉ tiêu và điểm trung bình của cán bộ đã xếp loại trong từng đơn vị.">
+              <DepartmentKPIChart />
+            </SectionCard>
+            <SectionCard icon={PieChartIcon} title="Phân bổ xếp loại" description={EXCELLENT_QUOTA_INFO}>
+              <RankDistributionChart />
+            </SectionCard>
           </div>
         </div>
       )}
@@ -306,20 +191,8 @@ export const Module5_DashboardsReports = () => {
           ============================================================================== */}
       {activeTab === 'reports' && (
         <SectionCard
-          title="Báo cáo Tổng hợp Đánh giá & Danh mục Phân loại Chi tiết"
-          description="Lọc theo các nhóm đối tượng: Tất cả, Đề xuất khen thưởng, Chưa hoàn thành, Không đạt"
-          action={
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                icon={Download}
-                onClick={() => handleExportCSV('ALL')}
-              >
-                Xuất file Excel tổng hợp
-              </Button>
-            </div>
-          }
+          icon={FileSpreadsheet}
+          title="Danh sách xếp loại"
         >
           <div className="space-y-4">
             {/* Filter toolbar */}
@@ -409,8 +282,9 @@ export const Module5_DashboardsReports = () => {
           ============================================================================== */}
       {activeTab === 'multi-period' && (
         <SectionCard
-          title="Lịch sử Đánh giá Nhiều Kỳ & Biểu đồ Xu hướng Toàn Cơ quan (Q1 - Q4/2026)"
-          description="Đo lường sự biến thiên điểm số trung bình và tỷ lệ hoàn thành mục tiêu qua các quý liên tiếp"
+          icon={TrendingUp}
+          title="Xu hướng nhiều kỳ"
+          description="Điểm trung bình và tỷ lệ hoàn thành qua các quý."
         >
           <div className="space-y-6">
             <div className="w-full h-[280px]">
@@ -538,8 +412,9 @@ export const Module5_DashboardsReports = () => {
           ============================================================================== */}
       {activeTab === 'export-templates' && (
         <SectionCard
-          title="Kết xuất Mẫu Phiếu Đánh giá Cá nhân & Biên bản Hội nghị Chuẩn Nghị định 90/2020"
-          description="In trực tiếp hoặc tải xuống file PDF theo đúng mẫu quy chuẩn văn bản hành chính nhà nước"
+          icon={Printer}
+          title="Mẫu in"
+          description="Phiếu đánh giá cá nhân và biên bản họp theo mẫu Nghị định 90/2020; in trực tiếp hoặc lưu PDF."
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
             <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
@@ -634,7 +509,7 @@ export const Module5_DashboardsReports = () => {
 
               <div className="space-y-1 text-xs">
                 <div>Họ và tên: <strong>Phạm Đức Thắng</strong></div>
-                <div>Chức vụ, chức danh: <strong>Chuyên viên Phát triển (Senior Dev)</strong></div>
+                <div>Chức vụ, chức danh: <strong>Kỹ sư phần mềm chính</strong></div>
                 <div>Đơn vị công tác: <strong>Tổ Kỹ thuật Backend & Dữ liệu lớn</strong></div>
                 <div>Kỳ đánh giá: <strong>Quý 4 / Năm 2026</strong></div>
               </div>
@@ -673,7 +548,7 @@ export const Module5_DashboardsReports = () => {
                   window.print();
                 }}
               >
-                In bản PDF chuẩn
+                In / lưu PDF
               </Button>
             </div>
           </div>
