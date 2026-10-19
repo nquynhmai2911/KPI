@@ -15,10 +15,11 @@ import {
   INITIAL_PERMISSIONS,
 } from '../data/initialData';
 import { INITIAL_KPI_TASKS } from '../data/initialTasks';
+import { getRoleLabel } from '../utils/labels';
 
 const AppContext = createContext();
 
-const STORAGE_KEY = 'GOV_KPI_SYSTEM_STATE_V1';
+const STORAGE_KEY = 'GOV_KPI_SYSTEM_STATE_V3';
 
 export const AppProvider = ({ children }) => {
   // Load state from localStorage or initialData
@@ -72,7 +73,7 @@ export const AppProvider = ({ children }) => {
 
   const [activeRole, setActiveRoleState] = useState(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_ACTIVE_ROLE`);
-    return saved || 'SYSTEM_ADMIN';
+    return saved || 'EMPLOYEE';
   });
 
   const [periods, setPeriods] = useState(() => {
@@ -225,7 +226,24 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
   });
 
-  const [activeModule, setActiveModule] = useState('dashboards'); // dashboards, org-system, library, my-kpi, team-kpi, reports, non-functional
+  // dashboards, periods, org-system, library, my-kpi, team-kpi, reports, non-functional
+  const MODULE_ALIASES = { planning: 'library', tracking: 'my-kpi', evaluation: 'team-kpi' };
+  const moduleFromHash = () => {
+    const id = window.location.hash.replace('#', '');
+    return MODULE_ALIASES[id] || id || 'dashboards';
+  };
+  const [activeModule, setActiveModuleState] = useState(moduleFromHash);
+  const setActiveModule = (id) => {
+    const next = MODULE_ALIASES[id] || id;
+    setActiveModuleState(next);
+    if (window.location.hash !== `#${next}`) window.history.pushState(null, '', `#${next}`);
+  };
+  useEffect(() => {
+    const onPop = () => setActiveModuleState(moduleFromHash());
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem(`${STORAGE_KEY}_DARK_MODE`) === 'true';
   });
@@ -378,6 +396,13 @@ export const AppProvider = ({ children }) => {
   // Current User info
   const currentUser = users.find((u) => u.id === currentUserId) || users[0];
   const activePeriod = periods.find((p) => p.id === activePeriodId) || periods[0];
+
+  // Vai trò đang làm việc luôn phải thuộc danh sách vai trò của tài khoản hiện tại
+  useEffect(() => {
+    const userRoles = currentUser?.roles || [currentUser?.role || 'EMPLOYEE'];
+    if (!userRoles.includes(activeRole)) setActiveRoleState(userRoles[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserId]);
 
   // Helper: Log audit trail
   const logAudit = (action, moduleName, description, oldValue = '', newValue = '') => {
@@ -1123,7 +1148,7 @@ export const AppProvider = ({ children }) => {
     );
 
     logAudit('CHECKIN_PROGRESS', 'Module 3: Theo dõi Tiến độ', `Check-in chỉ tiêu: Giá trị mới = ${checkinData.actualValue}`);
-    showToast('Cập nhật kết quả Check-in thành công!');
+    showToast('Đã cập nhật kết quả thực hiện!');
   };
 
   const addEvidence = (planId, itemId, evidenceData) => {
@@ -1203,7 +1228,7 @@ export const AppProvider = ({ children }) => {
               id: `chk-api-${Date.now()}-${Math.random()}`,
               date: new Date().toISOString().split('T')[0],
               actualValue: simulatedActual,
-              note: `[Đồng bộ API ${apiType.toUpperCase()}] Tự động kéo dữ liệu hệ thống lúc ${new Date().toLocaleTimeString('vi-VN')}`,
+              note: `[Đồng bộ tự động] Lấy dữ liệu lúc ${new Date().toLocaleTimeString('vi-VN')}`,
               evidenceName: `API_Sync_${apiType.toUpperCase()}_Log.json`,
               evidenceUrl: '#',
             };
@@ -1222,10 +1247,10 @@ export const AppProvider = ({ children }) => {
     );
 
     const apiNameMap = {
-      jira: 'Hệ thống Jira / Tác nghiệp Git',
+      jira: 'Hệ thống quản lý công việc',
       timesheet: 'Máy chấm công sinh trắc học',
       crm: 'Hệ thống CRM Doanh thu & Hợp đồng',
-      all: 'Tất cả các cổng API tích hợp',
+      all: 'Tất cả nguồn dữ liệu kết nối',
     };
 
     logAudit('API_SYNC', 'Module 3: Tích hợp API', `Đồng bộ dữ liệu tự động từ ${apiNameMap[apiType] || apiType}`);
@@ -1333,8 +1358,8 @@ export const AppProvider = ({ children }) => {
     };
     setMeetings1on1((prev) => [newMeeting, ...prev]);
     logAudit('SCHEDULE_1ON1', 'Module 3: Check-in 1:1', `Lưu biên bản trao đổi 1:1 với cán bộ: ${meetingData.employeeName}`);
-    addNotification('Biên bản Check-in 1:1 mới', `Quản lý vừa cập nhật nội dung trao đổi và hành động tiếp theo kỳ này.`, 'INFO', 'my-kpi');
-    showToast('Đã lưu biên bản Check-in 1:1 thành công!');
+    addNotification('Biên bản trao đổi 1:1 mới', `Quản lý vừa cập nhật nội dung trao đổi và hành động tiếp theo kỳ này.`, 'INFO', 'my-kpi');
+    showToast('Đã lưu biên bản trao đổi 1:1!');
   };
 
   const runBackgroundSchedulerJob = () => {
@@ -1371,7 +1396,7 @@ export const AppProvider = ({ children }) => {
 
     setSchedulerJobLogs((prev) => [logEntry, ...prev]);
     logAudit('RUN_SCHEDULER_JOB', 'Hệ thống Job Nền', `Chạy quét cảnh báo tiến độ tự động: ${atRiskCount} cảnh báo.`);
-    showToast(`Job nền hoàn tất: Quét ${totalScanned} chỉ tiêu, phát tán ${atRiskCount} cảnh báo!`, 'success');
+    showToast(`Đã quét ${totalScanned} chỉ tiêu, gửi ${atRiskCount} cảnh báo!`, 'success');
     return logEntry;
   };
 
@@ -1480,7 +1505,7 @@ export const AppProvider = ({ children }) => {
 
     setCurrentUserId(foundUser.id);
     setIsAuthenticated(true);
-    logAudit('LOGIN', 'Hệ thống', `Người dùng ${foundUser.name} (${foundUser.role}) đăng nhập thành công`);
+    logAudit('LOGIN', 'Hệ thống', `Người dùng ${foundUser.name} (${getRoleLabel(foundUser.role)}) đăng nhập thành công`);
     showToast(`Xin chào ${foundUser.name}, đăng nhập thành công!`, 'success');
     return { success: true, user: foundUser };
   };
@@ -1509,7 +1534,7 @@ export const AppProvider = ({ children }) => {
     setAuditLogs(INITIAL_AUDIT_LOGS);
     setNotifications(INITIAL_NOTIFICATIONS);
     setRolesConfig(INITIAL_ROLES);
-    setActiveRoleState('SYSTEM_ADMIN');
+    setActiveRoleState('EMPLOYEE');
 
     // clear storage
     Object.keys(localStorage).forEach((key) => {
@@ -1526,12 +1551,12 @@ export const AppProvider = ({ children }) => {
   const switchActiveRole = (newRole) => {
     const userRoles = currentUser.roles || [currentUser.role || 'EMPLOYEE'];
     if (!userRoles.includes(newRole)) {
-      showToast(`Tài khoản của bạn không được gán vai trò: ${newRole}`, 'error');
+      showToast(`Tài khoản của bạn không được gán vai trò: ${getRoleLabel(newRole)}`, 'error');
       return;
     }
     setActiveRoleState(newRole);
     logAudit('SWITCH_ROLE', 'Phân quyền RBAC', `Người dùng ${currentUser.name} chuyển vai trò làm việc sang "${newRole}"`);
-    showToast(`Đã chuyển vai trò làm việc: ${newRole}`, 'info');
+    showToast(`Đã chuyển vai trò: ${getRoleLabel(newRole)}`, 'info');
   };
 
   // 2. Kiểm tra quyền hạn "resource:action" của vai trò đang làm việc
@@ -1547,7 +1572,7 @@ export const AppProvider = ({ children }) => {
       prev.map((r) => (r.code === roleCode ? { ...r, permissions: newPermissions } : r))
     );
     logAudit('UPDATE_RBAC_MATRIX', 'Quản trị phân quyền', `Cập nhật danh sách quyền cho vai trò "${roleCode}"`);
-    showToast(`Đã cập nhật quyền hạn cho vai trò ${roleCode}!`);
+    showToast(`Đã cập nhật quyền cho vai trò ${getRoleLabel(roleCode)}!`);
   };
 
   // 4. Sao chép vai trò (Clone Role)
@@ -1581,7 +1606,7 @@ export const AppProvider = ({ children }) => {
   // 5. Bật / Tắt vai trò theo đặc thù tổ chức
   const toggleRoleActive = (roleCode, isActive) => {
     if (roleCode === 'SYSTEM_ADMIN' && !isActive) {
-      showToast('Không thể vô hiệu hóa vai trò Quản trị viên hệ thống (SYSTEM_ADMIN)!', 'error');
+      showToast('Không thể tắt vai trò Quản trị hệ thống!', 'error');
       return;
     }
 
@@ -1589,7 +1614,7 @@ export const AppProvider = ({ children }) => {
       prev.map((r) => (r.code === roleCode ? { ...r, isActive } : r))
     );
     logAudit('TOGGLE_ROLE', 'Quản trị phân quyền', `${isActive ? 'Kích hoạt' : 'Vô hiệu hóa'} vai trò "${roleCode}"`);
-    showToast(`Đã ${isActive ? 'bật' : 'tắt'} vai trò ${roleCode}!`);
+    showToast(`Đã ${isActive ? 'bật' : 'tắt'} vai trò ${getRoleLabel(roleCode)}!`);
   };
 
   const resetRolesToDefault = () => {

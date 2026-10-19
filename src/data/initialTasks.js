@@ -87,7 +87,7 @@ export const INITIAL_KPI_TASKS = [
   {
     id: 'task-04',
     code: 'TSK-2026-004',
-    name: 'Nâng cấp cụm cơ sở dữ liệu dự phòng (Disaster Recovery Replication)',
+    name: 'Nâng cấp cụm cơ sở dữ liệu dự phòng thảm họa',
     weight: 20,
     assigneeId: 'usr-04',
     assignee: {
@@ -377,7 +377,7 @@ export const INITIAL_KPI_TASKS = [
   {
     id: 'task-16',
     code: 'TSK-2026-016',
-    name: 'Xây dựng giao diện ứng dụng di động cho cán bộ tự chấm điểm KPI (Mobile UI)',
+    name: 'Xây dựng giao diện ứng dụng di động cho cán bộ tự chấm điểm KPI',
     weight: 25,
     assigneeId: 'usr-09',
     assignee: {
@@ -451,7 +451,7 @@ export const INITIAL_KPI_TASKS = [
   {
     id: 'task-19',
     code: 'TSK-2026-019',
-    name: 'Thực hiện quy trình kiểm tra chéo (Calibration) điểm đánh giá giữa các phòng',
+    name: 'Thực hiện quy trình kiểm tra chéo điểm đánh giá giữa các phòng',
     weight: 20,
     assigneeId: 'usr-06',
     assignee: {
