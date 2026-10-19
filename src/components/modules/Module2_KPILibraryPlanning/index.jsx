@@ -457,8 +457,8 @@ KPI-LRN-01,Số giờ hoàn thành chứng chỉ chuyên môn,Học hỏi & Phá
           </button>
           <span className={`w-2 h-2 rounded-full shrink-0 ${level.dot}`} title={level.label} />
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{node.title}</div>
-            <div className="text-xs text-slate-500 truncate">
+            <div className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-snug">{node.title}</div>
+            <div className="text-xs text-slate-500 leading-snug">
               {node.ownerName} · {node.department} · Mục tiêu {node.targetValue}
             </div>
           </div>
@@ -620,7 +620,7 @@ KPI-LRN-01,Số giờ hoàn thành chứng chỉ chuyên môn,Học hỏi & Phá
                       return (
                         <li key={item.id} className="flex items-center gap-4 px-4 py-3">
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{item.name}</div>
+                            <div className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-snug">{item.name}</div>
                             <div className="text-xs text-slate-400">
                               {item.category} · {item.unit}
                             </div>
@@ -763,7 +763,7 @@ KPI-LRN-01,Số giờ hoàn thành chứng chỉ chuyên môn,Học hỏi & Phá
                 <ul className="rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
                   {wizardItems.map((it) => (
                     <li key={it.id} className="flex items-center gap-4 px-4 py-3 text-sm">
-                      <span className="flex-1 min-w-0 truncate text-slate-800 dark:text-slate-200">{it.name}</span>
+                      <span className="flex-1 min-w-0 leading-snug text-slate-800 dark:text-slate-200">{it.name}</span>
                       <span className="text-slate-500 tabular-nums">
                         {it.target} {it.unit}
                       </span>

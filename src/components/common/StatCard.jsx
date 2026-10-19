@@ -44,18 +44,18 @@ export const StatCard = ({
   return (
     <Wrapper
       onClick={onClick}
-      className={`text-left w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-200 flex items-center gap-4 ${
+      className={`text-left w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-200 flex items-center gap-3.5 ${
         onClick ? 'hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md cursor-pointer' : ''
       } ${className}`}
     >
       {Icon && (
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${ICON_VARIANTS[variant] || ICON_VARIANTS.blue}`}>
-          <Icon size={22} />
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${ICON_VARIANTS[variant] || ICON_VARIANTS.blue}`}>
+          <Icon size={20} />
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
-          <span className="truncate">{label}</span>
+        <div className="flex items-start gap-1 text-sm leading-snug text-slate-500 dark:text-slate-400">
+          <span>{label}</span>
           {subtext && <InfoTip size={13}>{subtext}</InfoTip>}
         </div>
         <div className="mt-1 flex items-baseline gap-1.5 flex-wrap">

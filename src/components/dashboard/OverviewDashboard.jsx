@@ -61,7 +61,7 @@ const DeadlineList = ({ tasks, showAssignee }) => {
         return (
           <li key={t.id} className="flex items-center gap-3 py-2.5">
             <span className="min-w-0 flex-1">
-              <span className="block text-sm text-slate-800 dark:text-slate-200 truncate" title={t.name}>
+              <span className="block text-sm text-slate-800 dark:text-slate-200 leading-snug" title={t.name}>
                 {t.name}
               </span>
               {showAssignee && <span className="block text-xs text-slate-400 truncate">{t.assignee?.name}</span>}
@@ -198,7 +198,7 @@ export const OverviewDashboard = () => {
                 {items.map((it) => (
                   <li key={it.id} className="space-y-1.5">
                     <div className="flex items-baseline justify-between gap-4">
-                      <span className="text-sm text-slate-800 dark:text-slate-200 truncate" title={it.name}>
+                      <span className="text-sm text-slate-800 dark:text-slate-200 leading-snug" title={it.name}>
                         {it.name}
                       </span>
                       <span className="shrink-0 text-xs text-slate-400 tabular-nums">
@@ -277,7 +277,7 @@ export const OverviewDashboard = () => {
                       <span className="w-8 h-8 rounded-full bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 flex items-center justify-center text-xs font-semibold shrink-0">
                         {plan.employeeName?.split(' ').pop()?.[0]}
                       </span>
-                      <span className="min-w-0 flex-1 text-sm truncate">
+                      <span className="min-w-0 flex-1 text-sm leading-snug">
                         <span className="font-medium text-slate-800 dark:text-slate-200">{action.text}</span>
                         <span className="text-slate-400"> · {plan.employeeName}</span>
                       </span>
