@@ -2,500 +2,288 @@ import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { RbacMatrixTab } from './RbacMatrixTab';
 import {
-  ShieldCheck,
+  Shield,
   Bell,
   KeyRound,
   Database,
   History,
   Send,
   Download,
-  Upload,
-  CheckCircle,
-  AlertCircle,
-  Clock,
-  Filter,
+  RotateCcw,
+  CheckCircle2,
   Search,
-  Lock,
   Users,
+  Info,
+  AlertTriangle,
+  AlertOctagon,
 } from 'lucide-react';
+import { PageHeader } from '../../common/PageHeader';
+import { SectionCard } from '../../common/SectionCard';
+import { SegmentedControl } from '../../ui/SegmentedControl';
+import { Button } from '../../ui/Button';
+import { Input } from '../../ui/Input';
+import { FormField } from '../../common/FormField';
+import { Badge } from '../../ui/Badge';
+import { InfoTip } from '../../ui/InfoTip';
+import { getRoleLabel } from '../../../utils/labels';
+
+const NOTIF_STYLE = {
+  SUCCESS: { icon: CheckCircle2, cls: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400' },
+  WARNING: { icon: AlertTriangle, cls: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400' },
+  ALERT: { icon: AlertOctagon, cls: 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400' },
+  INFO: { icon: Info, cls: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400' },
+};
+
+const selectCls =
+  'h-9 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-900 dark:text-slate-100';
 
 export const Module6_SystemNonFunctional = () => {
-  const {
-    auditLogs,
-    notifications,
-    addNotification,
-    resetToDefaultData,
-    currentUser,
-    showToast,
-  } = useApp();
+  const { auditLogs, notifications, addNotification, resetToDefaultData, currentUser, showToast } = useApp();
 
-  const [activeTab, setActiveTab] = useState('rbac-matrix'); // rbac-matrix, audit-log, sso, notifications, backup
+  const [activeTab, setActiveTab] = useState('rbac-matrix');
   const [auditSearch, setAuditSearch] = useState('');
   const [auditModuleFilter, setAuditModuleFilter] = useState('ALL');
-
-  // Broadcast Notification Form
-  const [broadcastForm, setBroadcastForm] = useState({
-    title: '',
-    message: '',
-    type: 'INFO',
-    targetModule: 'planning',
-  });
-
-  // SSO Settings State
+  const [broadcastForm, setBroadcastForm] = useState({ title: '', message: '', type: 'INFO', targetModule: 'library' });
   const [ssoConfig, setSsoConfig] = useState({
     provider: 'MICROSOFT_AZURE_AD',
     tenantId: '72f988bf-86f1-41af-91ab-2d7cd011db47',
     clientId: 'gov-kpi-enterprise-auth-client',
     discoveryUrl: 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration',
-    status: 'CONNECTED',
-    domainEnforce: '@gov-kpi.vn',
     twoFactorEnforced: true,
   });
 
-  // Filter Audit Logs
-  const filteredLogs = auditLogs.filter((log) => {
-    const matchSearch =
-      log.userName.toLowerCase().includes(auditSearch.toLowerCase()) ||
-      log.description.toLowerCase().includes(auditSearch.toLowerCase()) ||
-      log.action.toLowerCase().includes(auditSearch.toLowerCase());
-    const matchMod = auditModuleFilter === 'ALL' || log.module.includes(auditModuleFilter);
-    return matchSearch && matchMod;
-  });
+  const q = auditSearch.toLowerCase();
+  const filteredLogs = auditLogs.filter(
+    (log) =>
+      (log.userName.toLowerCase().includes(q) || log.description.toLowerCase().includes(q)) &&
+      (auditModuleFilter === 'ALL' || log.module.includes(auditModuleFilter))
+  );
 
-  // Handle Send Broadcast Notification
   const handleSendBroadcast = (e) => {
     e.preventDefault();
     if (!broadcastForm.title || !broadcastForm.message) return;
-
-    addNotification(
-      broadcastForm.title,
-      broadcastForm.message,
-      broadcastForm.type,
-      broadcastForm.targetModule
-    );
-    showToast('Đã phát tán thông báo toàn cơ quan!');
-    setBroadcastForm({
-      title: '',
-      message: '',
-      type: 'INFO',
-      targetModule: 'planning',
-    });
+    addNotification(broadcastForm.title, broadcastForm.message, broadcastForm.type, broadcastForm.targetModule);
+    showToast('Đã gửi thông báo toàn cơ quan!');
+    setBroadcastForm({ title: '', message: '', type: 'INFO', targetModule: 'library' });
   };
 
-  // Export JSON Backup
   const handleExportBackup = () => {
-    const backupData = {
-      backupDate: new Date().toISOString(),
-      user: currentUser.name,
-      storage: { ...localStorage },
-    };
+    const backupData = { backupDate: new Date().toISOString(), user: currentUser.name, storage: { ...localStorage } };
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `GovKPI_System_Backup_${new Date().toISOString().split('T')[0]}.json`);
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `SaoLuu_KPI_${new Date().toISOString().split('T')[0]}.json`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('Đã xuất bản sao lưu cơ sở dữ liệu hệ thống!');
+    showToast('Đã tải bản sao lưu dữ liệu!');
   };
 
   return (
-    <div>
-      {/* Title */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <ShieldCheck style={{ color: 'var(--primary-600)' }} />
-          Module 6: Tiện ích Hệ thống & Phi Chức năng (Non-Functional)
-        </h2>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-          Nhật ký kiểm toán chống gian lận (Audit Trail), Cấu hình Single Sign-On (SSO), Trung tâm Thông báo phát tán và Sao lưu cơ sở dữ liệu
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        icon={Shield}
+        title="Quản trị hệ thống"
+        subtitle="Phân quyền theo vai trò, nhật ký thao tác (phục vụ thanh tra, kiểm tra), gửi thông báo, đăng nhập một lần và sao lưu dữ liệu."
+      />
 
-      {/* Tabs */}
-      <div className="tabs-nav">
-        <button
-          className={`tab-btn ${activeTab === 'rbac-matrix' ? 'active' : ''}`}
-          onClick={() => setActiveTab('rbac-matrix')}
-        >
-          <Users size={16} />
-          Ma trận Phân quyền & SoD (RBAC Matrix)
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'audit-log' ? 'active' : ''}`}
-          onClick={() => setActiveTab('audit-log')}
-        >
-          <History size={16} />
-          Nhật ký Kiểm toán (Audit Log) ({auditLogs.length})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'notifications' ? 'active' : ''}`}
-          onClick={() => setActiveTab('notifications')}
-        >
-          <Bell size={16} />
-          Trung tâm Thông báo Nhắc hạn ({notifications.length})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'sso' ? 'active' : ''}`}
-          onClick={() => setActiveTab('sso')}
-        >
-          <KeyRound size={16} />
-          Cấu hình Đăng nhập Một lần (SSO)
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'backup' ? 'active' : ''}`}
-          onClick={() => setActiveTab('backup')}
-        >
-          <Database size={16} />
-          Sao lưu & Khôi phục Dữ liệu
-        </button>
-      </div>
+      <SegmentedControl
+        value={activeTab}
+        onChange={setActiveTab}
+        options={[
+          { value: 'rbac-matrix', label: 'Phân quyền', icon: Users },
+          { value: 'audit-log', label: 'Nhật ký thao tác', icon: History, badge: auditLogs.length },
+          { value: 'notifications', label: 'Thông báo', icon: Bell, badge: notifications.length },
+          { value: 'sso', label: 'Đăng nhập một lần', icon: KeyRound },
+          { value: 'backup', label: 'Sao lưu', icon: Database },
+        ]}
+      />
 
-      {/* TAB 0: RBAC Matrix */}
       {activeTab === 'rbac-matrix' && <RbacMatrixTab />}
 
-      {/* TAB 1: Audit Log */}
       {activeTab === 'audit-log' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '320px' }}>
-              <div style={{ position: 'relative', flex: 1 }}>
-                <Search size={16} style={{ position: 'absolute', left: '12px', top: '11px', color: 'var(--text-light)' }} />
-                <input
-                  className="form-control"
-                  style={{ paddingLeft: '36px' }}
-                  placeholder="Tìm theo người thực hiện, thao tác, nội dung..."
-                  value={auditSearch}
-                  onChange={(e) => setAuditSearch(e.target.value)}
-                />
-              </div>
-
-              <select
-                className="form-control"
-                style={{ width: 'auto' }}
-                value={auditModuleFilter}
-                onChange={(e) => setAuditModuleFilter(e.target.value)}
-              >
-                <option value="ALL">Tất cả phân hệ</option>
-                <option value="Module 1">Module 1: Tổ chức & Kỳ</option>
-                <option value="Module 2">Module 2: Thư viện & Lập kế hoạch</option>
-                <option value="Module 3">Module 3: Theo dõi Tiến độ</option>
-                <option value="Module 4">Module 4: Đánh giá & Chấm điểm</option>
-                <option value="Module 6">Module 6: Hệ thống</option>
-              </select>
+        <SectionCard
+          title="Nhật ký thao tác"
+          icon={History}
+          description="Mọi thao tác thêm, sửa, duyệt, chấm điểm đều được ghi lại kèm người thực hiện, thời gian và địa chỉ IP. Không ai được sửa hoặc xóa nhật ký."
+          action={<span className="text-sm text-slate-500 tabular-nums">{filteredLogs.length} bản ghi</span>}
+        >
+          <div className="flex flex-wrap gap-3 mb-4">
+            <div className="flex-1 min-w-[260px]">
+              <Input leftIcon={Search} placeholder="Tìm người thực hiện, nội dung..." value={auditSearch} onChange={(e) => setAuditSearch(e.target.value)} />
             </div>
-
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              Tổng số vết ghi: <strong>{filteredLogs.length}</strong> hành động
-            </div>
+            <select className={`${selectCls} w-auto`} value={auditModuleFilter} onChange={(e) => setAuditModuleFilter(e.target.value)}>
+              <option value="ALL">Tất cả phân hệ</option>
+              <option value="Module 1">Tổ chức & kỳ đánh giá</option>
+              <option value="Module 2">Giao chỉ tiêu</option>
+              <option value="Module 3">Thực hiện</option>
+              <option value="Module 4">Đánh giá & xếp loại</option>
+              <option value="Module 6">Hệ thống</option>
+            </select>
           </div>
 
-          <div className="table-responsive">
-            <table className="table-custom">
-              <thead>
+          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 text-left text-xs text-slate-500">
                 <tr>
-                  <th>Thời gian</th>
-                  <th>Cán bộ thực hiện</th>
-                  <th>Vai trò</th>
-                  <th>Phân hệ</th>
-                  <th>Hành động (Action)</th>
-                  <th>Nội dung chi tiết</th>
-                  <th>Địa chỉ IP</th>
+                  <th className="px-4 py-3 font-medium">Thời gian</th>
+                  <th className="px-4 py-3 font-medium">Người thực hiện</th>
+                  <th className="px-4 py-3 font-medium">Phân hệ</th>
+                  <th className="px-4 py-3 font-medium">Nội dung</th>
+                  <th className="px-4 py-3 font-medium">IP</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredLogs.map((log) => (
-                  <tr key={log.id}>
-                    <td style={{ whiteSpace: 'nowrap', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      {log.timestamp}
+                  <tr key={log.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-500 tabular-nums">{log.timestamp}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-slate-900 dark:text-slate-100">{log.userName}</div>
+                      <div className="text-xs text-slate-400">{getRoleLabel(log.role)}</div>
                     </td>
-                    <td>
-                      <strong style={{ color: 'var(--text-main)' }}>{log.userName}</strong>
+                    <td className="px-4 py-3">
+                      <Badge size="sm" variant="primary">{log.module.replace(/^Module \d+:\s*/, '')}</Badge>
                     </td>
-                    <td>
-                      <span className="badge badge-gray">{log.role}</span>
-                    </td>
-                    <td>
-                      <span className="badge badge-blue">{log.module}</span>
-                    </td>
-                    <td>
-                      <span className="badge badge-gold" style={{ fontFamily: 'monospace' }}>
-                        {log.action}
-                      </span>
-                    </td>
-                    <td style={{ maxWidth: '350px', fontSize: '0.825rem' }}>
-                      <div>{log.description}</div>
+                    <td className="px-4 py-3 max-w-md text-slate-700 dark:text-slate-300">
+                      {log.description}
                       {log.oldValue && log.newValue && (
-                        <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                          <span style={{ textDecoration: 'line-through', color: '#ef4444' }}>{log.oldValue}</span> →{' '}
-                          <span style={{ color: '#10b981', fontWeight: 600 }}>{log.newValue}</span>
+                        <div className="text-xs mt-0.5">
+                          <span className="line-through text-rose-500">{log.oldValue}</span> →{' '}
+                          <span className="text-emerald-600 font-medium">{log.newValue}</span>
                         </div>
                       )}
                     </td>
-                    <td style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
-                      {log.ipAddress}
-                    </td>
+                    <td className="px-4 py-3 text-xs font-mono text-slate-400">{log.ipAddress}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </SectionCard>
       )}
 
-      {/* TAB 2: Notifications */}
       {activeTab === 'notifications' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
-          
-          {/* Left: Danh sách thông báo */}
-          <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '14px' }}>
-              Danh Sách Thông Báo & Nhắc Hạn Tự Động
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {notifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  className="card"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '14px',
-                    borderLeft: `4px solid ${
-                      notif.type === 'SUCCESS' ? '#10b981' : notif.type === 'WARNING' ? '#f59e0b' : notif.type === 'ALERT' ? '#ef4444' : '#2563eb'
-                    }`,
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                      <strong style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{notif.title}</strong>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{notif.time}</span>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <SectionCard className="lg:col-span-2" title="Thông báo đã gửi" icon={Bell}>
+            <ul className="space-y-3">
+              {notifications.map((notif) => {
+                const st = NOTIF_STYLE[notif.type] || NOTIF_STYLE.INFO;
+                const Icon = st.icon;
+                return (
+                  <li key={notif.id} className="flex gap-3 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${st.cls}`}>
+                      <Icon size={18} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{notif.title}</span>
+                        <span className="text-xs text-slate-400 whitespace-nowrap">{notif.time}</span>
+                      </div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{notif.message}</p>
                     </div>
-                    <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                      {notif.message}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </SectionCard>
 
-          {/* Right: Phát thông báo mới */}
-          <div className="card">
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '6px' }}>
-              Phát Thông Báo / Nhắc Hạn Toàn Hệ Thống
-            </h3>
-            <p style={{ fontSize: '0.785rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-              Gửi thông điệp nhắc nhở chốt KPI, mở đợt đánh giá tới tất cả cán bộ
-            </p>
-
-            <form onSubmit={handleSendBroadcast}>
-              <div className="form-group">
-                <label className="form-label">Tiêu đề thông báo *</label>
-                <input
-                  className="form-control"
-                  value={broadcastForm.title}
-                  onChange={(e) => setBroadcastForm({ ...broadcastForm, title: e.target.value })}
-                  placeholder="VD: Nhắc nhở hạn chót nộp KPI Quý 4"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Mức độ cảnh báo</label>
-                <select
-                  className="form-control"
-                  value={broadcastForm.type}
-                  onChange={(e) => setBroadcastForm({ ...broadcastForm, type: e.target.value })}
-                >
-                  <option value="INFO">Thông tin (Xanh dương)</option>
-                  <option value="WARNING">Cảnh báo nhắc nhở (Vàng cam)</option>
-                  <option value="ALERT">Khẩn cấp / Hạn chót (Đỏ)</option>
-                  <option value="SUCCESS">Hoàn tất / Khen thưởng (Xanh lá)</option>
+          <SectionCard title="Gửi thông báo mới" icon={Send} description="Nhắc hạn giao chỉ tiêu, mở đợt đánh giá... tới toàn bộ cán bộ.">
+            <form onSubmit={handleSendBroadcast} className="space-y-4">
+              <FormField label="Tiêu đề" required>
+                <Input value={broadcastForm.title} onChange={(e) => setBroadcastForm({ ...broadcastForm, title: e.target.value })} placeholder="VD: Nhắc hạn nộp KPI Quý 4" required />
+              </FormField>
+              <FormField label="Mức độ">
+                <select className={selectCls} value={broadcastForm.type} onChange={(e) => setBroadcastForm({ ...broadcastForm, type: e.target.value })}>
+                  <option value="INFO">Thông tin</option>
+                  <option value="WARNING">Nhắc nhở</option>
+                  <option value="ALERT">Khẩn cấp</option>
+                  <option value="SUCCESS">Hoàn tất</option>
                 </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Liên kết điều hướng đến</label>
-                <select
-                  className="form-control"
-                  value={broadcastForm.targetModule}
-                  onChange={(e) => setBroadcastForm({ ...broadcastForm, targetModule: e.target.value })}
-                >
-                  <option value="planning">Module 2: Đăng ký & Duyệt KPI</option>
-                  <option value="tracking">Module 3: Check-in & Minh chứng</option>
-                  <option value="evaluation">Module 4: Đánh giá & Chấm điểm</option>
-                  <option value="dashboards">Module 5: Báo cáo & Bảng điều khiển</option>
+              </FormField>
+              <FormField label="Bấm vào sẽ mở">
+                <select className={selectCls} value={broadcastForm.targetModule} onChange={(e) => setBroadcastForm({ ...broadcastForm, targetModule: e.target.value })}>
+                  <option value="library">Giao chỉ tiêu</option>
+                  <option value="my-kpi">Thực hiện</option>
+                  <option value="team-kpi">Đánh giá & xếp loại</option>
+                  <option value="reports">Kết quả & báo cáo</option>
                 </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Nội dung chi tiết thông điệp *</label>
+              </FormField>
+              <FormField label="Nội dung" required>
                 <textarea
-                  className="form-control"
-                  rows="4"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-sm"
+                  rows={4}
                   value={broadcastForm.message}
                   onChange={(e) => setBroadcastForm({ ...broadcastForm, message: e.target.value })}
-                  placeholder="Nội dung thông báo cần truyền đạt..."
                   required
                 />
-              </div>
-
-              <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-                <Send size={15} /> Phát Tán Thông Báo Ngay
-              </button>
+              </FormField>
+              <Button type="submit" icon={Send} className="w-full">Gửi ngay</Button>
             </form>
-          </div>
-
+          </SectionCard>
         </div>
       )}
 
-      {/* TAB 3: SSO Authentication */}
       {activeTab === 'sso' && (
-        <div style={{ maxWidth: '850px' }}>
-          <div className="card" style={{ marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#0078d4', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <KeyRound size={22} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>
-                    Single Sign-On (SSO) & Định Danh Điện Tử Doanh Nghiệp / Cơ Quan
-                  </h3>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Chuẩn kết nối SAML 2.0 / OpenID Connect (OIDC)
-                  </span>
-                </div>
-              </div>
-              <span className="badge badge-green">
-                <CheckCircle size={12} /> Đang hoạt động
+        <SectionCard
+          className="max-w-3xl"
+          title="Đăng nhập một lần"
+          icon={KeyRound}
+          description="Cán bộ đăng nhập bằng tài khoản email công vụ qua Microsoft 365, Google Workspace hoặc định danh điện tử quốc gia (VNeID), không cần mật khẩu riêng. Hỗ trợ chuẩn SAML 2.0 và OpenID Connect."
+          action={<Badge variant="success" dot>Đang hoạt động</Badge>}
+        >
+          <div className="space-y-4">
+            <FormField label="Nhà cung cấp định danh">
+              <select className={selectCls} value={ssoConfig.provider} onChange={(e) => setSsoConfig({ ...ssoConfig, provider: e.target.value })}>
+                <option value="MICROSOFT_AZURE_AD">Microsoft 365</option>
+                <option value="GOOGLE_WORKSPACE">Google Workspace</option>
+                <option value="GOV_ID">Định danh điện tử quốc gia (VNeID)</option>
+              </select>
+            </FormField>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField label="Mã tổ chức (Tenant ID)">
+                <Input value={ssoConfig.tenantId} onChange={(e) => setSsoConfig({ ...ssoConfig, tenantId: e.target.value })} />
+              </FormField>
+              <FormField label="Mã ứng dụng (Client ID)">
+                <Input value={ssoConfig.clientId} onChange={(e) => setSsoConfig({ ...ssoConfig, clientId: e.target.value })} />
+              </FormField>
+            </div>
+            <FormField label="Địa chỉ cấu hình" hint="Đường dẫn tự động lấy thông tin cấu hình của nhà cung cấp (OIDC Discovery).">
+              <Input value={ssoConfig.discoveryUrl} onChange={(e) => setSsoConfig({ ...ssoConfig, discoveryUrl: e.target.value })} />
+            </FormField>
+            <label className="flex items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 cursor-pointer">
+              <span className="flex items-center gap-1.5 text-sm font-medium text-slate-800 dark:text-slate-200">
+                Bắt buộc xác thực 2 lớp
+                <InfoTip size={13}>Tăng cường bảo mật theo quy định về bảo vệ dữ liệu cá nhân.</InfoTip>
               </span>
-            </div>
-
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-              Cho phép toàn thể cán bộ công chức đăng nhập tự động bằng tài khoản email công vụ (@gov-kpi.vn) thông qua Microsoft 365, Google Workspace hoặc Cổng Dịch vụ công Quốc gia mà không cần khởi tạo mật khẩu rời.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="form-group">
-                <label className="form-label">Nhà cung cấp định danh (Identity Provider)</label>
-                <select
-                  className="form-control"
-                  value={ssoConfig.provider}
-                  onChange={(e) => setSsoConfig({ ...ssoConfig, provider: e.target.value })}
-                >
-                  <option value="MICROSOFT_AZURE_AD">Microsoft Entra ID / Microsoft 365</option>
-                  <option value="GOOGLE_WORKSPACE">Google Workspace for Government</option>
-                  <option value="GOV_ID">Cổng Định danh Điện tử Quốc gia (VNeID / AD)</option>
-                </select>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="form-group">
-                  <label className="form-label">Tenant ID / Directory ID</label>
-                  <input
-                    className="form-control"
-                    value={ssoConfig.tenantId}
-                    onChange={(e) => setSsoConfig({ ...ssoConfig, tenantId: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Client ID / App ID</label>
-                  <input
-                    className="form-control"
-                    value={ssoConfig.clientId}
-                    onChange={(e) => setSsoConfig({ ...ssoConfig, clientId: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">OIDC Metadata Discovery Endpoint</label>
-                <input
-                  className="form-control"
-                  value={ssoConfig.discoveryUrl}
-                  onChange={(e) => setSsoConfig({ ...ssoConfig, discoveryUrl: e.target.value })}
-                />
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-card-hover)', padding: '14px', borderRadius: '10px' }}>
-                <div>
-                  <strong style={{ fontSize: '0.875rem' }}>Bắt buộc xác thực 2 yếu tố (2FA / MFA)</strong>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Tăng cường bảo mật an ninh mạng theo Nghị định về bảo vệ dữ liệu cá nhân
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={ssoConfig.twoFactorEnforced}
-                  onChange={(e) => setSsoConfig({ ...ssoConfig, twoFactorEnforced: e.target.checked })}
-                  style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                />
-              </div>
-            </div>
-
-            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button
-                className="btn btn-primary"
-                onClick={() => showToast('Đã lưu cấu hình SSO thành công!')}
-              >
-                Lưu Cấu Hình SSO
-              </button>
+              <input
+                type="checkbox"
+                checked={ssoConfig.twoFactorEnforced}
+                onChange={(e) => setSsoConfig({ ...ssoConfig, twoFactorEnforced: e.target.checked })}
+                className="w-5 h-5 accent-primary-600"
+              />
+            </label>
+            <div className="flex justify-end">
+              <Button icon={CheckCircle2} onClick={() => showToast('Đã lưu cấu hình đăng nhập một lần!')}>Lưu cấu hình</Button>
             </div>
           </div>
-        </div>
+        </SectionCard>
       )}
 
-      {/* TAB 4: Sao Lưu & Khôi Phục Dữ Liệu */}
       {activeTab === 'backup' && (
-        <div style={{ maxWidth: '850px' }}>
-          <div className="card">
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '6px' }}>
-              Trung Tâm Quản Trị Cơ Sở Dữ Liệu & Sao Lưu
-            </h3>
-            <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-              Đảm bảo an toàn dữ liệu, chống mất mát số liệu đánh giá của toàn bộ cơ quan
-            </p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div style={{ background: 'var(--bg-card-hover)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '8px' }}>
-                    Xuất Bản Sao Lưu Đầy Đủ (JSON Backup)
-                  </h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-                    Tải về toàn bộ cơ cấu tổ chức, chức danh, chỉ tiêu thư viện, các kế hoạch KPI, minh chứng và nhật ký kiểm toán.
-                  </p>
-                </div>
-                <button className="btn btn-primary" onClick={handleExportBackup}>
-                  <Download size={15} /> Tải Về Tệp Sao Lưu (.JSON)
-                </button>
-              </div>
-
-              <div style={{ background: 'var(--bg-card-hover)', padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ef4444', marginBottom: '8px' }}>
-                    Khôi Phục Dữ Liệu Mẫu Ban Đầu
-                  </h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-                    Xóa các thay đổi tạm thời và đưa toàn bộ cơ sở dữ liệu về bộ mẫu chuẩn nghiệp vụ ban đầu.
-                  </p>
-                </div>
-                <button
-                  className="btn btn-danger"
-                  onClick={() => {
-                    if (window.confirm('Khôi phục toàn bộ hệ thống về dữ liệu mẫu mặc định?')) {
-                      resetToDefaultData();
-                    }
-                  }}
-                >
-                  Khôi Phục Dữ Liệu Chuẩn Mẫu
-                </button>
-              </div>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+          <SectionCard title="Tải bản sao lưu" icon={Download} description="Toàn bộ cơ cấu tổ chức, chức danh, thư viện chỉ tiêu, phiếu KPI, minh chứng và nhật ký thao tác.">
+            <Button icon={Download} onClick={handleExportBackup} className="w-full">Tải tệp sao lưu</Button>
+          </SectionCard>
+          <SectionCard title="Khôi phục dữ liệu mẫu" icon={RotateCcw} description="Xóa các thay đổi và đưa hệ thống về bộ dữ liệu mẫu ban đầu.">
+            <Button
+              variant="danger"
+              icon={RotateCcw}
+              className="w-full"
+              onClick={() => window.confirm('Khôi phục toàn bộ hệ thống về dữ liệu mẫu?') && resetToDefaultData()}
+            >
+              Khôi phục
+            </Button>
+          </SectionCard>
         </div>
       )}
     </div>

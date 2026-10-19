@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { Button } from '../../ui/Button';
+import { Badge } from '../../ui/Badge';
+import { InfoTip } from '../../ui/InfoTip';
+import { ROLE_LABELS, getScopeLabel } from '../../../utils/labels';
 import {
   Shield,
   Copy,
@@ -96,72 +100,28 @@ export const RbacMatrixTab = () => {
 
   return (
     <div className="space-y-6">
-      {/* 1. Header & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-              Ma trận Phân quyền Chi tiết (Role x Permission Matrix)
-            </h3>
-            <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-              {activeRolesCount} / {rolesConfig.length} vai trò đang kích hoạt
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Cấu hình phân quyền động định dạng <code>resource:action</code>. Tùy biến bật/tắt vai trò hoặc sao chép vai trò mới phù hợp với mô hình tổ chức.
-          </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Ma trận phân quyền</h3>
+          <Badge variant="success" size="sm">{activeRolesCount}/{rolesConfig.length} vai trò bật</Badge>
+          <InfoTip title="Nguyên tắc tách quyền (bắt buộc ở máy chủ)">
+            <ol className="list-decimal pl-4 space-y-1">
+              <li>Không tự duyệt, tự xếp loại, tự giải quyết khiếu nại của chính mình.</li>
+              <li>Người đánh giá phải là cấp trên theo cây tổ chức.</li>
+              <li>Quản trị hệ thống không đọc được điểm và nhận xét.</li>
+              <li>Thanh tra chỉ được xem, không được sửa dữ liệu.</li>
+              <li>Kỳ đã khóa không được sửa; mở khóa phải có lý do và người đứng đầu duyệt.</li>
+              <li>Điều chỉnh điểm bắt buộc giải trình tối thiểu 10 ký tự và lưu lịch sử.</li>
+            </ol>
+          </InfoTip>
         </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={resetRolesToDefault}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all shrink-0 cursor-pointer border border-slate-200 dark:border-slate-700"
-            title="Khôi phục ma trận phân quyền về chuẩn mặc định ban đầu"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Khôi phục mặc định</span>
-          </button>
-
-          <button
-            onClick={() => setShowCloneModal(true)}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-primary-600 hover:bg-primary-500 shadow-md shadow-primary-600/20 transition-all shrink-0 cursor-pointer"
-          >
-            <Copy className="w-4 h-4" />
-            <span>Sao chép vai trò (Clone Role)</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Separation of Duties (SoD) Enforced Policy Banner */}
-      <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200">
-        <div className="flex items-start gap-3">
-          <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-          <div className="space-y-1.5 text-xs">
-            <div className="font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
-              Quy tắc Cưỡng chế Tách quyền ở Backend (Separation of Duties - SoD Rules)
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1 text-slate-700 dark:text-slate-300">
-              <div className="p-2 rounded-lg bg-white/60 dark:bg-slate-900/60 border border-amber-300/40 dark:border-amber-900/40">
-                <strong>1. Cấm tự duyệt:</strong> Không tự duyệt, tự xếp loại, tự giải quyết khiếu nại của chính mình.
-              </div>
-              <div className="p-2 rounded-lg bg-white/60 dark:bg-slate-900/60 border border-amber-300/40 dark:border-amber-900/40">
-                <strong>2. Đúng phân cấp:</strong> Người đánh giá bắt buộc phải là cấp trên theo cây tổ chức.
-              </div>
-              <div className="p-2 rounded-lg bg-white/60 dark:bg-slate-900/60 border border-amber-300/40 dark:border-amber-900/40">
-                <strong>3. Bảo mật Admin:</strong> SYSTEM_ADMIN không đọc được nội dung điểm và nhận xét mật.
-              </div>
-              <div className="p-2 rounded-lg bg-white/60 dark:bg-slate-900/60 border border-amber-300/40 dark:border-amber-900/40">
-                <strong>4. Auditor chỉ đọc:</strong> AUDITOR chỉ xem báo cáo và audit log, cấm sửa đổi dữ liệu.
-              </div>
-              <div className="p-2 rounded-lg bg-white/60 dark:bg-slate-900/60 border border-amber-300/40 dark:border-amber-900/40">
-                <strong>5. Kỳ đã khóa:</strong> Bất biến sau khóa; mở khóa cần lý do và Người đứng đầu duyệt.
-              </div>
-              <div className="p-2 rounded-lg bg-white/60 dark:bg-slate-900/60 border border-amber-300/40 dark:border-amber-900/40">
-                <strong>6. Giải trình điểm:</strong> Điều chỉnh điểm bắt buộc giải trình $\ge 10$ ký tự & lưu diff.
-              </div>
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" icon={RotateCcw} onClick={resetRolesToDefault} title="Khôi phục ma trận mặc định">
+            Mặc định
+          </Button>
+          <Button size="sm" icon={Copy} onClick={() => setShowCloneModal(true)}>
+            Sao chép vai trò
+          </Button>
         </div>
       </div>
 
@@ -172,7 +132,7 @@ export const RbacMatrixTab = () => {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Tìm theo mã quyền (resource:action) hoặc tên..."
+              placeholder="Tìm quyền..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs focus:outline-hidden focus:ring-2 focus:ring-primary-500 text-slate-800 dark:text-slate-200"
@@ -191,7 +151,7 @@ export const RbacMatrixTab = () => {
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
-              {m === 'ALL' ? 'Tất cả module' : m}
+              {m === 'ALL' ? 'Tất cả' : m}
             </button>
           ))}
         </div>
@@ -204,7 +164,7 @@ export const RbacMatrixTab = () => {
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800">
                 <th className="p-3 font-bold text-slate-700 dark:text-slate-300 min-w-[240px] sticky left-0 bg-slate-50 dark:bg-slate-800/90 z-10 backdrop-blur-xs">
-                  Quyền hạn chi tiết (Resource:Action)
+                  Quyền hạn
                 </th>
                 {rolesConfig.map((role) => (
                   <th
@@ -215,9 +175,8 @@ export const RbacMatrixTab = () => {
                   >
                     <div className="space-y-1.5">
                       <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
-                        {role.name.split('(')[0]?.trim()}
+                        {ROLE_LABELS[role.code] || role.name}
                       </div>
-                      <div className="text-[10px] font-mono text-slate-400">{role.code}</div>
                       <div className="flex items-center justify-center gap-1.5">
                         <span
                           className={`text-[9px] px-1.5 py-0.2 rounded-md font-mono font-bold ${
@@ -230,7 +189,7 @@ export const RbacMatrixTab = () => {
                               : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
                           }`}
                         >
-                          {role.dataScope}
+                          {getScopeLabel(role.dataScope)}
                         </span>
                         {/* Toggle active switch */}
                         <button
@@ -263,10 +222,7 @@ export const RbacMatrixTab = () => {
                       {perm.name}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <code className="text-[10px] text-primary-600 dark:text-primary-400 font-mono">
-                        {perm.code}
-                      </code>
-                      <span className="text-[10px] text-slate-400">• {perm.module}</span>
+                      <span className="text-[11px] text-slate-400">{perm.module}</span>
                     </div>
                   </td>
 
@@ -319,7 +275,7 @@ export const RbacMatrixTab = () => {
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Copy className="w-4 h-4 text-primary-600" />
-                Sao chép vai trò mới (Clone Role)
+                Sao chép vai trò mới
               </h3>
               <button
                 onClick={() => setShowCloneModal(false)}
@@ -343,7 +299,7 @@ export const RbacMatrixTab = () => {
                 >
                   {rolesConfig.map((r) => (
                     <option key={r.code} value={r.code}>
-                      {r.name} ({r.code})
+                      {ROLE_LABELS[r.code] || r.name}
                     </option>
                   ))}
                 </select>
@@ -351,11 +307,11 @@ export const RbacMatrixTab = () => {
 
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Mã vai trò mới (IN HOA, VIẾT LIỀN) <span className="text-rose-500">*</span>
+                  Mã vai trò (viết liền, không dấu) <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="VD: DEPUTY_HEAD, REGIONAL_DIRECTOR"
+                  placeholder="VD: PHO_TRUONG_DON_VI"
                   value={cloneForm.newRoleCode}
                   onChange={(e) =>
                     setCloneForm((prev) => ({ ...prev, newRoleCode: e.target.value }))
