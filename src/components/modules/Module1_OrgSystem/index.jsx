@@ -27,6 +27,9 @@ import {
 
 import { SegmentedControl } from '../../ui/SegmentedControl';
 import { PageHeader } from '../../common/PageHeader';
+import { Button } from '../../ui/Button';
+import { Badge } from '../../ui/Badge';
+import { InfoTip } from '../../ui/InfoTip';
 
 const MAIN_ROLES = ['SYSTEM_ADMIN', 'EXECUTIVE', 'UNIT_HEAD', 'LINE_MANAGER', 'HR_OFFICER', 'EMPLOYEE', 'COUNCIL_MEMBER', 'SECRETARY', 'AUDITOR'];
 const DEFAULT_SCOPE = {
@@ -572,17 +575,17 @@ export const Module1_OrgSystem = () => {
       {activeTab === 'org-tree' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Cột trái: Cây đơn vị đệ quy */}
-          <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm flex flex-col h-[750px]">
+          <div className="lg:col-span-7 self-start bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] flex flex-col max-h-[750px]">
             {/* Header Toolbar */}
             <div className="flex items-center justify-between gap-3 mb-4">
               <div className="relative flex-1">
-                <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+                <Search size={14} className="absolute left-3 top-3 text-slate-400" />
                 <input
                   type="text"
                   placeholder="Tìm đơn vị theo tên hoặc mã..."
                   value={deptSearch}
                   onChange={(e) => setDeptSearch(e.target.value)}
-                  className="w-full text-xs pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full h-9 text-sm pl-8 pr-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -590,23 +593,23 @@ export const Module1_OrgSystem = () => {
                 <button
                   type="button"
                   onClick={expandAll}
-                  className="px-2.5 py-1.5 text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200"
+                  className="h-9 px-3 text-sm whitespace-nowrap border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   Mở hết
                 </button>
                 <button
                   type="button"
                   onClick={collapseAll}
-                  className="px-2.5 py-1.5 text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200"
+                  className="h-9 px-3 text-sm whitespace-nowrap border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   Thu gọn
                 </button>
                 <button
                   type="button"
                   onClick={() => handleOpenAddDept('')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm"
+                  className="flex items-center gap-1.5 h-9 px-3 text-sm font-medium whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm cursor-pointer"
                 >
-                  <Plus size={14} />
+                  <Plus size={15} />
                   Thêm đơn vị
                 </button>
               </div>
@@ -622,9 +625,9 @@ export const Module1_OrgSystem = () => {
             </div>
 
             {/* Tree Summary Footer */}
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
-              <span>Tổng số: <strong>{departments.length}</strong> đơn vị hành chính</span>
-              <span>Độ sâu tối đa: <strong>3 cấp</strong> (Bộ &gt; Cục &gt; Phòng)</span>
+            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+              <span><strong>{departments.length}</strong> đơn vị</span>
+              <span><strong>{Math.max(1, ...departments.map((d) => d.level || 1))}</strong> cấp</span>
             </div>
           </div>
 
@@ -632,132 +635,95 @@ export const Module1_OrgSystem = () => {
           <div className="lg:col-span-5 space-y-5">
             {selectedDept ? (
               <>
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                        {selectedDept.levelName || `Cấp ${selectedDept.level}`}
-                      </span>
-                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">
-                        {selectedDept.name}
-                      </h3>
-                      <p className="text-xs font-mono text-slate-400 mt-0.5">
-                        Mã: {selectedDept.code} • Phân cấp C{selectedDept.level}
-                      </p>
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-[0_1px_2px_rgba(15,23,42,0.04)] overflow-hidden">
+                  <div className="px-5 pt-5 pb-4 space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-xs text-slate-500">
+                          {selectedDept.levelName || `Cấp ${selectedDept.level}`} · <span className="font-mono">{selectedDept.code}</span>
+                        </div>
+                        <h3 className="text-base font-semibold text-slate-900 dark:text-white leading-snug mt-0.5">{selectedDept.name}</h3>
+                      </div>
+                      <Badge variant={selectedDept.operatingMode === 'GOVERNMENT' ? 'primary' : selectedDept.operatingMode === 'ENTERPRISE' ? 'purple' : 'warning'}>
+                        {selectedDept.operatingMode === 'GOVERNMENT' ? 'Cơ quan nhà nước' : selectedDept.operatingMode === 'ENTERPRISE' ? 'Doanh nghiệp' : 'Kết hợp'}
+                      </Badge>
                     </div>
-
-                    <span className={`whitespace-nowrap px-2.5 py-1 rounded-full text-xs font-bold ${
-                      selectedDept.operatingMode === 'GOVERNMENT'
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                        : selectedDept.operatingMode === 'ENTERPRISE'
-                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300'
-                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
-                    }`}>
-                      {selectedDept.operatingMode === 'GOVERNMENT' ? 'Cơ quan Nhà nước' : selectedDept.operatingMode === 'ENTERPRISE' ? 'Khối Doanh nghiệp' : 'Kết hợp'}
-                    </span>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 leading-snug">
+                      {selectedDept.description || 'Chưa cập nhật mô tả chức năng nhiệm vụ.'}
+                    </p>
                   </div>
 
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-3 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/50">
-                    {selectedDept.description || 'Chưa cập nhật mô tả chức năng nhiệm vụ.'}
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40">
-                      <div className="text-[10px] text-slate-400 font-bold uppercase">Người đứng đầu</div>
-                      <div className="font-bold text-slate-800 dark:text-slate-200 mt-1">
-                        {selectedDept.managerName || 'Chưa bổ nhiệm'}
-                      </div>
+                  <div className="grid grid-cols-2 border-y border-slate-100 dark:border-slate-800 divide-x divide-slate-100 dark:divide-slate-800">
+                    <div className="px-5 py-3">
+                      <div className="text-xs text-slate-500">Người đứng đầu</div>
+                      <div className="text-sm font-medium text-slate-900 dark:text-slate-100 mt-0.5">{selectedDept.managerName || 'Chưa bổ nhiệm'}</div>
                     </div>
-
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40">
-                      <div className="text-[10px] text-slate-400 font-bold uppercase">Số cán bộ</div>
-                      <div className="font-extrabold text-blue-600 text-base mt-0.5">
-                        {deptStaff.length} <span className="text-xs font-normal text-slate-400">cán bộ</span>
-                      </div>
+                    <div className="px-5 py-3">
+                      <div className="text-xs text-slate-500">Số cán bộ</div>
+                      <div className="text-sm font-medium text-slate-900 dark:text-slate-100 mt-0.5 tabular-nums">{deptStaff.length} người</div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenAddDept(selectedDept.id)}
-                      className="flex-1 py-1.5 text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 rounded-lg flex items-center justify-center gap-1.5"
-                    >
-                      <Plus size={13} /> Thêm cấp con
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditDept(selectedDept)}
-                      className="px-3 py-1.5 text-xs font-bold bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 text-blue-600 rounded-lg flex items-center gap-1"
-                    >
-                      <Edit2 size={13} /> Sửa
-                    </button>
-                    <button
-                      type="button"
+                  <div className="flex items-center gap-2 px-5 py-3">
+                    <Button variant="outline" size="sm" icon={Plus} className="flex-1" onClick={() => handleOpenAddDept(selectedDept.id)}>
+                      Thêm đơn vị con
+                    </Button>
+                    <Button variant="outline" size="sm" icon={Edit2} onClick={() => handleOpenEditDept(selectedDept)}>
+                      Sửa
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={Trash2}
+                      className="text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
                       onClick={() => handleDeleteDept(selectedDept.id)}
-                      className="px-3 py-1.5 text-xs font-bold bg-red-50 dark:bg-red-900/30 hover:bg-red-100 text-red-600 rounded-lg flex items-center gap-1"
-                    >
-                      <Trash2 size={13} /> Xóa
-                    </button>
+                      aria-label="Xóa đơn vị"
+                      title="Xóa đơn vị"
+                    />
                   </div>
                 </div>
 
-                {/* Danh sách nhân sự của đơn vị */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-                      Cán bộ trực thuộc ({deptStaff.length})
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-[0_1px_2px_rgba(15,23,42,0.04)] overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-800">
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
+                      Cán bộ trực thuộc <span className="font-normal text-slate-400 tabular-nums">{deptStaff.length}</span>
                     </h4>
                     <button
+                      type="button"
                       onClick={() => {
                         handleOpenAddUser();
                         setUserForm((prev) => ({ ...prev, departmentId: selectedDept.id }));
                       }}
-                      className="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1"
+                      className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline flex items-center gap-1 cursor-pointer"
                     >
-                      <Plus size={13} /> Bổ nhiệm cán bộ
+                      <Plus size={14} /> Thêm cán bộ
                     </button>
                   </div>
 
                   {deptStaff.length > 0 ? (
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[320px] overflow-y-auto">
                       {deptStaff.map((staff) => (
-                        <div
-                          key={staff.id}
-                          className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <img
-                              src={staff.avatar}
-                              alt={staff.name}
-                              className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200"
-                            />
-                            <div className="min-w-0">
-                              <div className="text-xs font-bold text-slate-900 dark:text-white leading-snug break-words">
-                                {staff.name}
-                              </div>
-                              <div className="text-[10px] text-slate-400 leading-snug break-words">
-                                {staff.positionTitle || 'Chuyên viên'} • {staff.email}
-                              </div>
-                            </div>
+                        <div key={staff.id} className="group flex items-center gap-3 px-5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                          <img src={staff.avatar} alt={staff.name} className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium text-slate-900 dark:text-white leading-snug">{staff.name}</div>
+                            <div className="text-xs text-slate-500 leading-snug">{staff.positionTitle || 'Chuyên viên'}</div>
                           </div>
-
-                          <div className="flex items-center gap-2">
-                            {renderEmployeeTypeBadge(staff.employeeType || 'CONG_CHUC')}
-                            <button
-                              onClick={() => handleOpenEditUser(staff)}
-                              className="p-1 text-slate-400 hover:text-blue-600"
-                            >
-                              <Edit2 size={12} />
-                            </button>
-                          </div>
+                          {renderEmployeeTypeBadge(staff.employeeType || 'CONG_CHUC')}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditUser(staff)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                            aria-label={`Sửa ${staff.name}`}
+                            title="Sửa hồ sơ"
+                          >
+                            <Edit2 size={14} />
+                          </button>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-6 text-slate-400 text-xs">
-                      Chưa có cán bộ nào được phân công về đơn vị này
-                    </div>
+                    <div className="text-center py-8 text-slate-400 text-sm">Chưa có cán bộ nào thuộc đơn vị này.</div>
                   )}
                 </div>
               </>
@@ -774,19 +740,18 @@ export const Module1_OrgSystem = () => {
       {/* TAB 2: QUẢN LÝ CÁN BỘ & NHÂN SỰ (EMPLOYEES & USERS)                    */}
       {/* ====================================================================== */}
       {activeTab === 'employees' && (
-        <div className="space-y-5">
-          {/* Action Toolbar & Filters */}
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-[0_1px_2px_rgba(15,23,42,0.04)] overflow-hidden">
+          <div className="p-4 space-y-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               {/* Search */}
               <div className="relative flex-1 max-w-md">
                 <Search size={14} className="absolute left-3 top-3 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Tìm kiếm theo Tên, Email, Mã cán bộ, SĐT, CCCD..."
+                  placeholder="Tìm theo tên, email, mã cán bộ, số điện thoại, CCCD…"
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
-                  className="w-full text-xs pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full h-9 text-sm pl-9 pr-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -795,7 +760,7 @@ export const Module1_OrgSystem = () => {
                 <button
                   type="button"
                   onClick={() => setShowImportModal(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition-all"
+                  className="flex items-center gap-1.5 h-9 px-3 text-sm font-medium whitespace-nowrap border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   <FileSpreadsheet size={15} />
                   Nhập từ Excel
@@ -804,7 +769,7 @@ export const Module1_OrgSystem = () => {
                 <button
                   type="button"
                   onClick={handleOpenAddUser}
-                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm transition-all"
+                  className="flex items-center gap-1.5 h-9 px-3 text-sm font-medium whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition-colors cursor-pointer"
                 >
                   <UserPlus size={15} />
                   Thêm cán bộ
@@ -813,7 +778,7 @@ export const Module1_OrgSystem = () => {
             </div>
 
             {/* Filter Pills */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1">
                   Đơn vị
@@ -821,7 +786,7 @@ export const Module1_OrgSystem = () => {
                 <select
                   value={filterDept}
                   onChange={(e) => setFilterDept(e.target.value)}
-                  className="w-full text-xs py-1.5 px-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200"
+                  className="w-full h-9 text-sm px-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200"
                 >
                   <option value="ALL">Tất cả đơn vị</option>
                   {departments.map((d) => (
@@ -839,14 +804,14 @@ export const Module1_OrgSystem = () => {
                 <select
                   value={filterEmployeeType}
                   onChange={(e) => setFilterEmployeeType(e.target.value)}
-                  className="w-full text-xs py-1.5 px-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200"
+                  className="w-full h-9 text-sm px-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200"
                 >
-                  <option value="ALL">Tất cả loại đối tượng</option>
-                  <option value="CAN_BO">Cán bộ (Bầu cử/Nhiệm kỳ)</option>
-                  <option value="CONG_CHUC">Công chức (Ngạch biên chế)</option>
-                  <option value="VIEN_CHUC">Viên chức (Đơn vị sự nghiệp)</option>
-                  <option value="NHAN_VIEN_HOP_DONG">Hợp đồng Nghị định 111</option>
-                  <option value="DOANH_NGHIEP">Hợp đồng Doanh nghiệp</option>
+                  <option value="ALL">Tất cả đối tượng</option>
+                  <option value="CAN_BO">Cán bộ (bầu cử, nhiệm kỳ)</option>
+                  <option value="CONG_CHUC">Công chức (biên chế)</option>
+                  <option value="VIEN_CHUC">Viên chức (đơn vị sự nghiệp)</option>
+                  <option value="NHAN_VIEN_HOP_DONG">Hợp đồng theo Nghị định 111</option>
+                  <option value="DOANH_NGHIEP">Hợp đồng doanh nghiệp</option>
                 </select>
               </div>
 
@@ -857,9 +822,9 @@ export const Module1_OrgSystem = () => {
                 <select
                   value={filterCadreRank}
                   onChange={(e) => setFilterCadreRank(e.target.value)}
-                  className="w-full text-xs py-1.5 px-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200"
+                  className="w-full h-9 text-sm px-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200"
                 >
-                  <option value="ALL">Tất cả ngạch bậc</option>
+                  <option value="ALL">Tất cả ngạch</option>
                   <option value="Chuyên viên cao cấp">Chuyên viên cao cấp</option>
                   <option value="Chuyên viên chính">Chuyên viên chính</option>
                   <option value="Chuyên viên">Chuyên viên</option>
@@ -874,7 +839,7 @@ export const Module1_OrgSystem = () => {
                 <select
                   value={filterRole}
                   onChange={(e) => setFilterRole(e.target.value)}
-                  className="w-full text-xs py-1.5 px-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200"
+                  className="w-full h-9 text-sm px-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200"
                 >
                   <option value="ALL">Tất cả vai trò</option>
                   {MAIN_ROLES.map((r) => (
@@ -887,8 +852,7 @@ export const Module1_OrgSystem = () => {
             </div>
           </div>
 
-          {/* Table Container */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 dark:bg-slate-800/50 text-left text-xs font-medium text-slate-500 border-b border-slate-200 dark:border-slate-800">
@@ -897,7 +861,7 @@ export const Module1_OrgSystem = () => {
                     <th className="py-3 px-4">Đơn vị</th>
                     <th className="py-3 px-4">Ngạch</th>
                     <th className="py-3 px-4">Vai trò</th>
-                    <th className="py-3 px-4">Xác thực 2 lớp</th>
+                    <th className="py-3 px-4">Bảo mật 2 lớp</th>
                     <th className="py-3 px-4 text-right">Thao tác</th>
                   </tr>
                 </thead>
@@ -1031,7 +995,7 @@ export const Module1_OrgSystem = () => {
                 Hiển thị <strong>{filteredUsers.length}</strong> / tổng số <strong>{users.length}</strong> cán bộ
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-400">Đã kích hoạt 2FA: {users.filter((u) => u.isTwoFactorEnabled).length}</span>
+                <span className="text-xs text-slate-400">Đã bật bảo mật 2 lớp: {users.filter((u) => u.isTwoFactorEnabled).length}</span>
               </div>
             </div>
           </div>
@@ -1042,54 +1006,44 @@ export const Module1_OrgSystem = () => {
       {/* TAB 3: DANH MỤC VỊ TRÍ VIỆC LÀM (POSITIONS)                           */}
       {/* ====================================================================== */}
       {activeTab === 'positions' && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                Vị trí việc làm
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Cấu hình vị trí lãnh đạo, chuyên môn nghiệp vụ theo Nghị định 62/2020 & 106/2020
-              </p>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-[0_1px_2px_rgba(15,23,42,0.04)] overflow-hidden">
+          <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">Vị trí việc làm</h3>
+              <InfoTip>Danh mục vị trí lãnh đạo, chuyên môn nghiệp vụ theo Nghị định 62/2020 và 106/2020.</InfoTip>
             </div>
-            <button
-              onClick={() => showToast('Chức năng thêm danh mục vị trí việc làm')}
-              className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg flex items-center gap-1.5 shadow-sm"
-            >
-              <Plus size={14} /> Thêm vị trí việc làm
-            </button>
+            <Button variant="primary" size="sm" icon={Plus} onClick={() => showToast('Chức năng thêm danh mục vị trí việc làm')}>
+              Thêm vị trí
+            </Button>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {positions.map((pos) => (
-              <div
-                key={pos.id}
-                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-2.5"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="whitespace-nowrap text-[10px] font-mono px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold">
-                      {pos.code}
-                    </span>
-                    <h4 className="font-extrabold text-xs text-slate-900 dark:text-white mt-1.5">
-                      {pos.title}
-                    </h4>
-                  </div>
-                  <span className="whitespace-nowrap text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                    {pos.civilServantRank || 'Chuyên viên'}
-                  </span>
-                </div>
-
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
-                  {pos.description || 'Chưa cập nhật bản mô tả vị trí việc làm.'}
-                </p>
-
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-[10px] text-slate-400">
-                  <span>Nhóm: <strong className="text-slate-600 dark:text-slate-300">{pos.category}</strong></span>
-                  <span className="text-blue-600 font-semibold cursor-pointer hover:underline">Chi tiết</span>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-800/50 text-left text-xs font-medium text-slate-500">
+                  <th className="px-6 py-2.5 font-medium">Vị trí</th>
+                  <th className="px-3 py-2.5 font-medium">Mô tả</th>
+                  <th className="px-3 py-2.5 font-medium">Nhóm</th>
+                  <th className="px-6 py-2.5 font-medium">Ngạch tương ứng</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {positions.map((pos) => (
+                  <tr key={pos.id} className="align-top hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <td className="px-6 py-3 min-w-[220px]">
+                      <div className="font-medium text-slate-900 dark:text-slate-100 leading-snug">{pos.title}</div>
+                      <div className="text-xs font-mono text-primary-600 dark:text-primary-400">{pos.code}</div>
+                    </td>
+                    <td className="px-3 py-3 text-slate-600 dark:text-slate-400 leading-snug max-w-md">
+                      {pos.description || 'Chưa cập nhật bản mô tả vị trí việc làm.'}
+                    </td>
+                    <td className="px-3 py-3 text-slate-700 dark:text-slate-300 whitespace-nowrap">{pos.category}</td>
+                    <td className="px-6 py-3">
+                      <Badge variant="secondary">{pos.civilServantRank || 'Chuyên viên'}</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
