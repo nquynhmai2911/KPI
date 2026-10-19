@@ -41,6 +41,10 @@ body {
   overflow-x: hidden;
 }
 
+th {
+  white-space: nowrap;
+}
+
 /* Tabular Numbers Utility for KPI figures */
 .tabular-nums {
   font-variant-numeric: tabular-nums;

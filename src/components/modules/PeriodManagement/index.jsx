@@ -95,7 +95,7 @@ export const PeriodManagement = () => {
                   </div>
                 </div>
                 {isActive ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-primary-700 bg-primary-50 dark:text-primary-300 dark:bg-primary-950/60 px-2 py-1 rounded-lg shrink-0">
+                  <span className="whitespace-nowrap inline-flex items-center gap-1 text-xs font-medium text-primary-700 bg-primary-50 dark:text-primary-300 dark:bg-primary-950/60 px-2 py-1 rounded-lg shrink-0">
                     <CheckCircle2 size={14} /> Đang xem
                   </span>
                 ) : (

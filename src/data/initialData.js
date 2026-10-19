@@ -475,7 +475,7 @@ export const INITIAL_USERS = [
     positionId: 'pos-05',
     positionTitle: 'Chuyên viên Kiểm thử & Đánh giá 360°',
     departmentId: 'dept-01-01-02',
-    departmentName: 'Tổ Trải nghiệm Người dùng & QA',
+    departmentName: 'Tổ Giao diện & Kiểm thử chất lượng',
     departmentPath: '/root/dept-01/dept-01-01/dept-01-01-02',
     managerId: 'usr-02',
     managerName: 'Lê Hoàng Minh',

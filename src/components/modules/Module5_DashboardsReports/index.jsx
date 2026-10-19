@@ -43,7 +43,7 @@ import {
 import { PageHeader } from '../../common/PageHeader';
 import { SectionCard } from '../../common/SectionCard';
 import { StatCard } from '../../common/StatCard';
-import { EXCELLENT_QUOTA_INFO, getRankStats } from '../../../utils/labels';
+import { EXCELLENT_QUOTA_INFO, getRankStats, getRankVariant, RANK_LABELS } from '../../../utils/labels';
 import { DepartmentKPIChart } from '../../dashboard/DepartmentKPIChart';
 import { RankDistributionChart } from '../../dashboard/RankDistributionChart';
 import { Button } from '../../ui/Button';
@@ -223,16 +223,16 @@ export const Module5_DashboardsReports = () => {
             {/* Report Table */}
             <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200 dark:border-slate-800">
+                <thead className="bg-slate-50 dark:bg-slate-800/50 text-left text-xs font-medium text-slate-500 border-b border-slate-200 dark:border-slate-800">
                   <tr>
-                    <th className="p-3">Họ và tên cán bộ</th>
-                    <th className="p-3">Đơn vị công tác</th>
-                    <th className="p-3">Số lượng KPI</th>
-                    <th className="p-3">Điểm Quản lý</th>
+                    <th className="p-3">Cán bộ</th>
+                    <th className="p-3">Đơn vị</th>
+                    <th className="p-3">Số KPI</th>
+                    <th className="p-3">Điểm quản lý</th>
                     <th className="p-3">Điểm 360°</th>
-                    <th className="p-3">Điểm Tổng</th>
-                    <th className="p-3">Mức Xếp loại</th>
-                    <th className="p-3">Đề xuất khen thưởng</th>
+                    <th className="p-3">Điểm tổng</th>
+                    <th className="p-3">Xếp loại</th>
+                    <th className="p-3">Khen thưởng</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -254,8 +254,8 @@ export const Module5_DashboardsReports = () => {
                         <td className="p-3 font-semibold tabular-nums">{p.peerScoreAvg || 90}</td>
                         <td className="p-3 font-bold text-primary-600 tabular-nums">{p.finalScore || 88}</td>
                         <td className="p-3">
-                          <Badge variant={p.finalRank === 'XUẤT SẮC' ? 'excellent' : p.finalRank === 'TỐT' ? 'good' : 'completed'}>
-                            {p.finalRank || 'TỐT'}
+                          <Badge variant={getRankVariant(p.finalRank)}>
+                            {RANK_LABELS[p.finalRank] || 'Chưa xếp loại'}
                           </Badge>
                         </td>
                         <td className="p-3">
@@ -345,9 +345,9 @@ export const Module5_DashboardsReports = () => {
 
                 <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 dark:bg-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <thead className="bg-slate-50 dark:bg-slate-800/50 text-left text-xs font-medium text-slate-500">
                       <tr>
-                        <th className="p-3">Họ và tên cán bộ</th>
+                        <th className="p-3">Cán bộ</th>
                         <th className="p-3">Ngạch bậc hiện tại</th>
                         <th className="p-3">Hệ số lương</th>
                         <th className="p-3">Xếp loại Q4/2026</th>
@@ -372,7 +372,7 @@ export const Module5_DashboardsReports = () => {
               <div className="space-y-3">
                 <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 dark:bg-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <thead className="bg-slate-50 dark:bg-slate-800/50 text-left text-xs font-medium text-slate-500">
                       <tr>
                         <th className="p-3">Nhân sự</th>
                         <th className="p-3">Chức danh</th>
@@ -392,7 +392,7 @@ export const Module5_DashboardsReports = () => {
                             <td className="p-3 font-bold text-slate-900 dark:text-slate-100">{p.employeeName}</td>
                             <td className="p-3 text-slate-600">{p.positionTitle}</td>
                             <td className="p-3 tabular-nums"><NumberText value={base} /> VNĐ</td>
-                            <td className="p-3"><Badge variant={p.finalRank === 'XUẤT SẮC' ? 'excellent' : 'good'}>{p.finalRank || 'TỐT'}</Badge></td>
+                            <td className="p-3"><Badge variant={getRankVariant(p.finalRank)}>{RANK_LABELS[p.finalRank] || 'Chưa xếp loại'}</Badge></td>
                             <td className="p-3 font-bold tabular-nums text-primary-600">{mult}x</td>
                             <td className="p-3 font-black tabular-nums text-emerald-600"><NumberText value={bonus} /> VNĐ</td>
                           </tr>

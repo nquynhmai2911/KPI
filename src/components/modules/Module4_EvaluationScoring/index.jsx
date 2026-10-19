@@ -43,7 +43,7 @@ import { DateText } from '../../common/DateText';
 import { NumberText } from '../../common/NumberText';
 import { StatusBadge } from '../../common/StatusBadge';
 import { ProgressBar } from '../../common/ProgressBar';
-import { EXCELLENT_QUOTA_INFO, checkExcellentQuota } from '../../../utils/labels';
+import { EXCELLENT_QUOTA_INFO, checkExcellentQuota, getRankVariant, RANK_LABELS } from '../../../utils/labels';
 
 export const Module4_EvaluationScoring = () => {
   const {
@@ -827,8 +827,8 @@ export const Module4_EvaluationScoring = () => {
                         <div className="font-semibold text-primary-600 tabular-nums">{plan.finalScore ? `${plan.finalScore} điểm` : '—'}</div>
                       </div>
                       {plan.finalRank ? (
-                        <Badge variant={plan.finalRank === 'XUẤT SẮC' ? 'excellent' : plan.finalRank === 'TỐT' ? 'good' : 'completed'}>
-                          {plan.finalRank}
+                        <Badge variant={getRankVariant(plan.finalRank)}>
+                          {RANK_LABELS[plan.finalRank] || plan.finalRank}
                         </Badge>
                       ) : (
                         <Badge variant="secondary">Chưa xếp loại</Badge>

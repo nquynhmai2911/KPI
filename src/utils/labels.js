@@ -178,6 +178,9 @@ export const RANK_LABELS = {
   'CHƯA XẾP LOẠI': 'Chưa xếp loại',
 };
 
+export const getRankVariant = (rank) =>
+  ({ 'XUẤT SẮC': 'excellent', 'TỐT': 'good', 'HOÀN THÀNH': 'completed', 'KHÔNG HOÀN THÀNH': 'failed' })[rank] || 'default';
+
 const RANK_CODE = {
   'XUẤT SẮC': 'EXCELLENT',
   'TỐT': 'GOOD',

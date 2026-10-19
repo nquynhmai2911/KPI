@@ -48,7 +48,7 @@ export const Badge = ({
 
   return (
     <span
-      className={`inline-flex items-center font-semibold rounded-md border select-none transition-colors ${
+      className={`inline-flex items-center shrink-0 whitespace-nowrap font-semibold rounded-md border select-none transition-colors ${
         variantStyles[variant] || variantStyles.default
       } ${sizeStyles[size] || sizeStyles.md} ${className}`}
       {...props}
