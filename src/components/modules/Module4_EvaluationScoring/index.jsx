@@ -25,6 +25,10 @@ import {
   Lock,
   Vote,
   FileText,
+  Check,
+  ChevronLeft,
+  ClipboardCheck,
+  Eye,
 } from 'lucide-react';
 import { PageHeader } from '../../common/PageHeader';
 import { SectionCard } from '../../common/SectionCard';
@@ -32,12 +36,14 @@ import { StatCard } from '../../common/StatCard';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { Input } from '../../ui/Input';
+import { Select } from '../../ui/Select';
 import { SegmentedControl } from '../../ui/SegmentedControl';
 import { FormField } from '../../common/FormField';
 import { DateText } from '../../common/DateText';
 import { NumberText } from '../../common/NumberText';
 import { StatusBadge } from '../../common/StatusBadge';
 import { ProgressBar } from '../../common/ProgressBar';
+import { EXCELLENT_QUOTA_INFO, checkExcellentQuota } from '../../../utils/labels';
 
 export const Module4_EvaluationScoring = () => {
   const {
@@ -59,19 +65,34 @@ export const Module4_EvaluationScoring = () => {
     setQuotaPolicy,
     systemOperatingMode,
     showToast,
+    activeRole,
   } = useApp();
+
+  const isSelfOnly = activeRole === 'EMPLOYEE' || activeRole === 'PEER_REVIEWER';
+  const canManage = ['SYSTEM_ADMIN', 'EXECUTIVE', 'UNIT_HEAD', 'LINE_MANAGER'].includes(activeRole);
+  const canCouncil = ['SYSTEM_ADMIN', 'EXECUTIVE', 'COUNCIL_MEMBER', 'SECRETARY', 'HR_OFFICER'].includes(activeRole);
+  const stepFromStatus = (plan) =>
+    plan?.evaluationStatus === 'EVALUATED' ? 4 : plan?.evaluationStatus === 'SELF_EVALUATED' ? 2 : 1;
 
   // Top navigation tabs
   const [activeTab, setActiveTab] = useState('evaluation-form'); // 'evaluation-form', 'collective-meeting', 'batch-approval', 'calibration-adjust', '360-review', 'timeline'
-  const [wizardStep, setWizardStep] = useState(1); // 1: Self assessment, 2: Manager assessment, 3: Collective/Peer, 4: Final Rank & Conclusion
-
   // Select target evaluation plan
   const [selectedPlanId, setSelectedPlanId] = useState(() => {
-    const userPlan = kpiPlans.find((p) => p.employeeId === currentUser.id);
-    return userPlan ? userPlan.id : kpiPlans[0]?.id;
+    const preferred = canManage
+      ? kpiPlans.find((p) => p.employeeId !== currentUser.id)
+      : kpiPlans.find((p) => p.employeeId === currentUser.id);
+    return preferred ? preferred.id : kpiPlans[0]?.id;
   });
 
   const targetPlan = kpiPlans.find((p) => p.id === selectedPlanId) || kpiPlans[0];
+  const isOwner = targetPlan?.employeeId === currentUser.id;
+  const [wizardStep, setWizardStep] = useState(() => stepFromStatus(targetPlan)); // 1: Tự đánh giá, 2: Quản lý chấm, 3: Tập thể/360, 4: Kết luận
+  const selectablePlans =
+    activeTab === '360-review'
+      ? kpiPlans.filter((p) => p.employeeId !== currentUser.id)
+      : isSelfOnly
+      ? kpiPlans.filter((p) => p.employeeId === currentUser.id)
+      : kpiPlans;
   const targetEmployee = users.find((u) => u.id === targetPlan?.employeeId);
 
   // Scores state
@@ -147,6 +168,7 @@ export const Module4_EvaluationScoring = () => {
       setSelfScores(sScores);
       setManagerScores(mScores);
       setManagerFeedback(plan.managerNote || '');
+      setWizardStep(stepFromStatus(plan));
     }
   };
 
@@ -207,154 +229,135 @@ export const Module4_EvaluationScoring = () => {
     : Math.round((totalItemScore * 0.8 + (targetPlan?.peerScoreAvg || 90) * 0.2) * 10) / 10;
 
   const rankProposal = calculateRankWithExclusions(calculatedFinalScore, targetPlan?.employeeId);
+  const batchExcellent = kpiPlans.filter((p) => p.finalRank === 'XUẤT SẮC').length;
+  const batchGood = kpiPlans.filter((p) => p.finalRank === 'TỐT').length;
+  const batchQuota = checkExcellentQuota(batchExcellent, batchGood);
+  const canEditStep = wizardStep === 1 ? isOwner : wizardStep === 2 ? canManage && !isOwner : canManage;
+  const meetingRecord = collectiveMeetings?.find((m) => m.planId === targetPlan?.id || m.employeeId === targetPlan?.employeeId);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <PageHeader
-        breadcrumbs={[
-          { label: 'Trang chủ', onClick: () => {} },
-          { label: 'Quy trình Đánh giá' },
-          {
-            label:
-              activeTab === 'evaluation-form'
-                ? 'Phiếu đánh giá nhiều bước'
-                : activeTab === 'collective-meeting'
-                ? 'Hội nghị tập thể (NĐ 90)'
-                : activeTab === 'batch-approval'
-                ? 'Duyệt hàng loạt'
-                : activeTab === 'calibration-adjust'
-                ? 'Hiệu chỉnh xếp loại'
-                : 'Đánh giá 360°',
-          },
-        ]}
-        title={
+        icon={Award}
+        title="Đánh giá & xếp loại"
+        subtitle={
           systemOperatingMode === 'GOVERNMENT'
-            ? 'Quy trình Đánh giá & Xếp loại Cán bộ (Nghị định 90/2020 & 48/2023)'
-            : 'Quy trình Đánh giá Hiệu suất Toàn diện (Performance Workflow)'
-        }
-        subtitle="Hỗ trợ State Machine đa bước, điều kiện loại trừ kỷ luật, tiêu chí người đứng đầu và kiểm soát tỷ lệ trần"
-        badge={
-          <Badge variant="primary" dot>
-            Workflow: {systemOperatingMode === 'GOVERNMENT' ? 'Mẫu Nhà nước (NĐ 90)' : 'Mẫu Doanh nghiệp (BSC/360)'}
-          </Badge>
-        }
-        actions={
-          <SegmentedControl
-            options={[
-              { value: 'evaluation-form', label: 'Phiếu đánh giá', icon: Award },
-              {
-                value: 'collective-meeting',
-                label: systemOperatingMode === 'GOVERNMENT' ? 'Hội nghị tập thể' : 'Calibration',
-                icon: Vote,
-              },
-              { value: '360-review', label: 'Góp ý 360°', icon: Users2 },
-              { value: 'batch-approval', label: `Duyệt hàng loạt (${kpiPlans.length})`, icon: CheckSquare },
-              { value: 'calibration-adjust', label: 'Hiệu chỉnh điểm', icon: Edit3 },
-            ]}
-            value={activeTab}
-            onChange={(val) => setActiveTab(val)}
-            size="md"
-          />
+            ? 'Theo Nghị định 90/2020 và 48/2023: cán bộ tự đánh giá → quản lý trực tiếp chấm điểm → tập thể đơn vị góp ý, biểu quyết → người đứng đầu kết luận xếp loại. Cán bộ có kỷ luật bị giới hạn mức xếp loại; tỷ lệ Xuất sắc không quá 20% số Hoàn thành tốt.'
+            : 'Nhân viên tự đánh giá → quản lý chấm điểm → tổng hợp góp ý 360° và hiệu chỉnh → kết luận xếp loại.'
         }
       />
 
-      {/* Select Employee Bar */}
-      <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Chọn hồ sơ đánh giá:
+      <SegmentedControl
+        options={[
+          { value: 'evaluation-form', label: 'Phiếu đánh giá', icon: Award },
+          ...(canManage || canCouncil
+            ? [{ value: 'collective-meeting', label: systemOperatingMode === 'GOVERNMENT' ? 'Họp tập thể' : 'Hiệu chỉnh', icon: Vote }]
+            : []),
+          { value: '360-review', label: 'Góp ý đồng nghiệp', icon: Users2 },
+          ...(canManage || canCouncil
+            ? [
+                { value: 'batch-approval', label: 'Duyệt hàng loạt', icon: CheckSquare, badge: kpiPlans.length },
+                { value: 'calibration-adjust', label: 'Quy tắc tỷ lệ', icon: Edit3 },
+              ]
+            : []),
+        ]}
+        value={activeTab}
+        onChange={(val) => setActiveTab(val)}
+      />
+
+      {!['batch-approval', 'calibration-adjust'].includes(activeTab) && (
+      <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 dark:bg-primary-950 dark:text-primary-300 flex items-center justify-center text-sm font-semibold shrink-0">
+            {targetPlan?.employeeName?.split(' ').pop()?.[0]}
           </span>
-          <select
-            value={selectedPlanId}
-            onChange={(e) => handleSelectPlan(e.target.value)}
-            className="text-xs font-semibold px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
-          >
-            {kpiPlans.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.employeeName} — {p.positionTitle} ({p.departmentName}) [{p.statusName || 'Đang thực hiện'}]
-              </option>
-            ))}
-          </select>
+          {selectablePlans.length > 1 ? (
+            <div className="w-full sm:w-96">
+              <Select value={selectedPlanId} onChange={(e) => handleSelectPlan(e.target.value)} aria-label="Chọn cán bộ">
+                {selectablePlans.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.employeeName} — {p.departmentName}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          ) : (
+            <div className="min-w-0">
+              <div className="font-medium text-slate-900 dark:text-slate-100 truncate">{targetPlan?.employeeName}</div>
+              <div className="text-xs text-slate-500 truncate">
+                {targetPlan?.positionTitle} · {targetPlan?.departmentName}
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {disciplineInfo && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300">
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-              Có kỷ luật ({disciplineInfo.typeName}) • Giới hạn: {disciplineInfo.maxAllowedRank}
-            </span>
+            <Badge variant="danger" icon={AlertTriangle} title={disciplineInfo.typeName}>
+              Kỷ luật · tối đa {disciplineInfo.maxAllowedRank}
+            </Badge>
           )}
-
           {isLeader && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
-              <Briefcase className="w-3.5 h-3.5" />
-              Người đứng đầu (70% kết quả đơn vị)
-            </span>
+            <Badge variant="purple" icon={Briefcase} title="Điểm = 30% KPI cá nhân + 70% kết quả đơn vị phụ trách">
+              Người đứng đầu
+            </Badge>
           )}
         </div>
       </div>
+      )}
 
-      {/* ==============================================================================
-          TAB 1: PHIẾU ĐÁNH GIÁ NHIỀU BƯỚC (MULTI-STEP FORM)
-          ============================================================================== */}
       {activeTab === 'evaluation-form' && (
         <div className="space-y-6">
-          {/* Stepper Progress */}
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between text-xs font-semibold">
-            <button
-              onClick={() => setWizardStep(1)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                wizardStep === 1 ? 'bg-primary-50 text-primary-700 dark:bg-primary-950 font-bold' : 'text-slate-500'
-              }`}
-            >
-              <span className="w-5 h-5 rounded-full bg-primary-600 text-white flex items-center justify-center text-[11px]">1</span>
-              <span>Cá nhân tự chấm điểm</span>
-            </button>
-            <ChevronRight className="w-4 h-4 text-slate-300" />
-
-            <button
-              onClick={() => setWizardStep(2)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                wizardStep === 2 ? 'bg-primary-50 text-primary-700 dark:bg-primary-950 font-bold' : 'text-slate-500'
-              }`}
-            >
-              <span className="w-5 h-5 rounded-full bg-primary-600 text-white flex items-center justify-center text-[11px]">2</span>
-              <span>Quản lý trực tiếp chấm điểm</span>
-            </button>
-            <ChevronRight className="w-4 h-4 text-slate-300" />
-
-            <button
-              onClick={() => setWizardStep(3)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                wizardStep === 3 ? 'bg-primary-50 text-primary-700 dark:bg-primary-950 font-bold' : 'text-slate-500'
-              }`}
-            >
-              <span className="w-5 h-5 rounded-full bg-primary-600 text-white flex items-center justify-center text-[11px]">3</span>
-              <span>{systemOperatingMode === 'GOVERNMENT' ? 'Biểu quyết Hội nghị tập thể' : 'Điểm 360 & Calibration'}</span>
-            </button>
-            <ChevronRight className="w-4 h-4 text-slate-300" />
-
-            <button
-              onClick={() => setWizardStep(4)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                wizardStep === 4 ? 'bg-primary-50 text-primary-700 dark:bg-primary-950 font-bold' : 'text-slate-500'
-              }`}
-            >
-              <span className="w-5 h-5 rounded-full bg-primary-600 text-white flex items-center justify-center text-[11px]">4</span>
-              <span>Kết luận & Xếp loại</span>
-            </button>
+          <div className="p-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 grid grid-cols-2 lg:grid-cols-4 gap-1">
+            {[
+              { step: 1, label: 'Tự đánh giá', icon: UserCheck },
+              { step: 2, label: 'Quản lý chấm', icon: ClipboardCheck },
+              { step: 3, label: systemOperatingMode === 'GOVERNMENT' ? 'Tập thể góp ý' : 'Góp ý 360°', icon: Vote },
+              { step: 4, label: 'Kết luận', icon: Award },
+            ].map(({ step, label, icon: StepIcon }) => {
+              const active = wizardStep === step;
+              const done = stepFromStatus(targetPlan) > step || targetPlan?.evaluationStatus === 'EVALUATED';
+              return (
+                <button
+                  key={step}
+                  type="button"
+                  onClick={() => setWizardStep(step)}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors ${
+                    active
+                      ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300 font-semibold'
+                      : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <span
+                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                      done
+                        ? 'bg-emerald-500 text-white'
+                        : active
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800'
+                    }`}
+                  >
+                    {done ? <Check size={14} /> : <StepIcon size={14} />}
+                  </span>
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Step 1 & Step 2: Scoring Items */}
           {(wizardStep === 1 || wizardStep === 2) && (
             <SectionCard
-              title={
-                wizardStep === 1
-                  ? `Bước 1: Cá nhân Tự nhận xét & Chấm điểm: ${targetPlan?.employeeName}`
-                  : `Bước 2: Trưởng đơn vị Đánh giá & Chấm điểm: ${targetPlan?.employeeName}`
+              icon={wizardStep === 1 ? UserCheck : ClipboardCheck}
+              title={wizardStep === 1 ? 'Cán bộ tự chấm điểm' : 'Quản lý trực tiếp chấm điểm'}
+              description="Chấm điểm từng chỉ tiêu theo trọng số; điểm mỗi chỉ tiêu tối đa 120% trọng số. Chỉ cán bộ được tự chấm, chỉ quản lý (không phải chính mình) được chấm bước 2."
+              action={
+                !canEditStep && (
+                  <Badge variant="secondary" icon={Eye}>
+                    Chỉ xem
+                  </Badge>
+                )
               }
-              description="Chấm điểm từng chỉ tiêu theo trọng số. Điểm tối đa không vượt quá 120% trọng số chỉ tiêu."
             >
               <div className="space-y-4">
                 {targetPlan?.items?.map((item) => (
@@ -366,7 +369,7 @@ export const Module4_EvaluationScoring = () => {
                       <div>
                         <div className="flex items-center gap-2 text-xs">
                           <span className="font-mono font-bold text-primary-600">{item.kpiCode || item.code}</span>
-                          <span className="text-slate-400">• Trọng số: {item.weight}%</span>
+                          <span className="text-slate-400">· {item.weight}%</span>
                         </div>
                         <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 mt-0.5">
                           {item.name}
@@ -374,9 +377,9 @@ export const Module4_EvaluationScoring = () => {
                       </div>
 
                       <div className="text-right text-xs">
-                        <span className="text-slate-500">Mục tiêu: {item.target} {item.unit}</span>
+                        <span className="text-slate-500">Mục tiêu {item.target} {item.unit}</span>
                         <div className="font-bold text-slate-800 dark:text-slate-200">
-                          Thực tế: {item.actual || 0} {item.unit} ({item.progressPercent || 0}%)
+                          Thực tế {item.actual || 0} {item.unit} ({item.progressPercent || 0}%)
                         </div>
                       </div>
                     </div>
@@ -384,12 +387,12 @@ export const Module4_EvaluationScoring = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-xs">
                       <div>
                         <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                          Điểm tự chấm (Max: {item.weight * 1.2}đ):
+                          Tự chấm (tối đa {item.weight * 1.2})
                         </label>
                         <Input
                           type="number"
                           step="0.1"
-                          disabled={wizardStep !== 1}
+                          disabled={wizardStep !== 1 || !canEditStep}
                           value={selfScores[item.id] || 0}
                           onChange={(e) =>
                             setSelfScores({ ...selfScores, [item.id]: Number(e.target.value) })
@@ -399,12 +402,12 @@ export const Module4_EvaluationScoring = () => {
 
                       <div>
                         <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                          Quản lý chấm (Max: {item.weight * 1.2}đ):
+                          Quản lý chấm (tối đa {item.weight * 1.2})
                         </label>
                         <Input
                           type="number"
                           step="0.1"
-                          disabled={wizardStep !== 2}
+                          disabled={wizardStep !== 2 || !canEditStep}
                           value={managerScores[item.id] || 0}
                           onChange={(e) =>
                             setManagerScores({ ...managerScores, [item.id]: Number(e.target.value) })
@@ -416,11 +419,12 @@ export const Module4_EvaluationScoring = () => {
                 ))}
 
                 {wizardStep === 2 && (
-                  <FormField label="Nhận xét của Quản lý trực tiếp về ưu khuyết điểm:">
+                  <FormField label="Nhận xét của quản lý">
                     <textarea
                       rows={3}
                       className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                      placeholder="Ghi nhận thái độ công tác, năng lực giải quyết công việc, tinh thần phối hợp..."
+                      placeholder="Ưu điểm, hạn chế, tinh thần phối hợp..."
+                      disabled={!canEditStep}
                       value={managerFeedback}
                       onChange={(e) => setManagerFeedback(e.target.value)}
                     />
@@ -429,15 +433,23 @@ export const Module4_EvaluationScoring = () => {
 
                 <div className="flex justify-between items-center pt-3 border-t border-slate-100 dark:border-slate-800">
                   <span className="text-xs font-semibold text-slate-600">
-                    Tổng điểm chấm KPI: <strong className="text-primary-600 text-sm tabular-nums">{totalItemScore}</strong> / 100
+                    Tổng điểm <strong className="text-primary-600 text-sm tabular-nums">{totalItemScore}</strong> / 100
                   </span>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleSaveEvaluation(false)}>
-                      Lưu nháp điểm
-                    </Button>
-                    <Button variant="primary" size="sm" onClick={() => setWizardStep((prev) => prev + 1)}>
-                      Tiếp tục bước sau
-                    </Button>
+                    {canEditStep && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        icon={Send}
+                        onClick={() => {
+                          handleSaveEvaluation(false);
+                          setWizardStep((prev) => prev + 1);
+                        }}
+                      >
+                        {wizardStep === 1 ? 'Gửi tự đánh giá' : 'Lưu điểm'}
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" icon={ChevronRight} onClick={() => setWizardStep((prev) => prev + 1)} aria-label="Bước sau" title="Bước sau" />
                   </div>
                 </div>
               </div>
@@ -447,43 +459,45 @@ export const Module4_EvaluationScoring = () => {
           {/* Step 3: Collective Meeting / 360 */}
           {wizardStep === 3 && (
             <SectionCard
-              title={systemOperatingMode === 'GOVERNMENT' ? 'Bước 3: Ý kiến của Tập thể & Kết quả Biểu quyết' : 'Bước 3: Tổng hợp Ý kiến 360° & Hiệu chỉnh'}
-              description="Nghị định 90/2020 quy định hội nghị tập thể đơn vị họp lấy ý kiến và bỏ phiếu biểu quyết mức xếp loại"
+              icon={Vote}
+              title={systemOperatingMode === 'GOVERNMENT' ? 'Ý kiến tập thể' : 'Góp ý 360°'}
+              description="Theo Nghị định 90/2020, tập thể đơn vị họp góp ý và bỏ phiếu đề xuất mức xếp loại trước khi người đứng đầu kết luận."
             >
               <div className="space-y-4 text-xs">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-200">
-                    <div className="font-bold">Số phiếu Xuất sắc</div>
-                    <div className="text-2xl font-black text-purple-700 tabular-nums">12 / 15</div>
+                    <div className="font-medium">Xuất sắc</div>
+                    <div className="text-2xl font-bold text-purple-700 tabular-nums">{meetingRecord ? `${meetingRecord.voteExcellent} / ${meetingRecord.totalVotes}` : '—'}</div>
                   </div>
                   <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200">
-                    <div className="font-bold">Số phiếu Tốt</div>
-                    <div className="text-2xl font-black text-emerald-700 tabular-nums">3 / 15</div>
+                    <div className="font-medium">Hoàn thành tốt</div>
+                    <div className="text-2xl font-bold text-emerald-700 tabular-nums">{meetingRecord ? `${meetingRecord.voteGood} / ${meetingRecord.totalVotes}` : '—'}</div>
                   </div>
                   <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200">
-                    <div className="font-bold">Số phiếu Hoàn thành</div>
-                    <div className="text-2xl font-black text-blue-700 tabular-nums">0 / 15</div>
+                    <div className="font-medium">Hoàn thành</div>
+                    <div className="text-2xl font-bold text-blue-700 tabular-nums">{meetingRecord ? `${meetingRecord.voteCompleted} / ${meetingRecord.totalVotes}` : '—'}</div>
                   </div>
                   <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200">
-                    <div className="font-bold">Không hoàn thành</div>
-                    <div className="text-2xl font-black text-rose-700 tabular-nums">0 / 15</div>
+                    <div className="font-medium">Không hoàn thành</div>
+                    <div className="text-2xl font-bold text-rose-700 tabular-nums">{meetingRecord ? `${meetingRecord.voteFailed} / ${meetingRecord.totalVotes}` : '—'}</div>
                   </div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-2">
-                  <strong className="text-slate-800 dark:text-slate-200">Trích yếu Biên bản Hội nghị lấy ý kiến:</strong>
+                  <strong className="text-slate-800 dark:text-slate-200">Trích yếu biên bản</strong>
                   <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                    "Hội nghị đã nghe đồng chí trình bày bản tự nhận xét đánh giá; các thành viên trong tập thể đã tham gia góp ý thẳng thắn, dân chủ. Toàn thể hội nghị thống nhất đánh giá đồng chí hoàn thành tốt nhiệm vụ được giao."
+                    {meetingRecord?.meetingMinutes || 'Chưa có biên bản họp tập thể cho cán bộ này.'}
                   </p>
                 </div>
 
                 <div className="flex justify-between items-center pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <Button variant="outline" size="sm" onClick={() => setWizardStep(2)}>
-                    Quay lại Bước 2
-                  </Button>
-                  <Button variant="primary" size="sm" onClick={() => setWizardStep(4)}>
-                    Tiến hành Xếp loại chung
-                  </Button>
+                  <Button variant="ghost" size="sm" icon={ChevronLeft} onClick={() => setWizardStep(2)} aria-label="Quay lại" title="Quay lại" />
+                  {canCouncil && !meetingRecord && (
+                    <Button variant="outline" size="sm" icon={FileText} onClick={() => setActiveTab('collective-meeting')}>
+                      Nhập biên bản
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="sm" icon={ChevronRight} onClick={() => setWizardStep(4)} aria-label="Bước sau" title="Bước sau" />
                 </div>
               </div>
             </SectionCard>
@@ -492,15 +506,16 @@ export const Module4_EvaluationScoring = () => {
           {/* Step 4: Final Rank & Conclusion */}
           {wizardStep === 4 && (
             <SectionCard
-              title="Bước 4: Kết luận & Ban hành Xếp loại của Người đứng đầu Đơn vị"
-              description="Tổng hợp công thức tính điểm, áp dụng điều kiện loại trừ kỷ luật và kiểm soát tỷ lệ khống chế"
+              icon={Award}
+              title="Kết luận xếp loại"
+              description="Điểm tổng hợp tự động; áp dụng giới hạn do kỷ luật và trần 20% Xuất sắc. Người đứng đầu có thể điều chỉnh nhưng bắt buộc ghi lý do."
             >
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Điểm tổng hợp */}
                   <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Điểm Tổng hợp Tự động
+                      Điểm tổng hợp
                     </span>
                     <div className="text-4xl font-black text-primary-600 tabular-nums">
                       {calculatedFinalScore} <span className="text-sm font-medium text-slate-400">/ 100 điểm</span>
@@ -524,7 +539,7 @@ export const Module4_EvaluationScoring = () => {
                   {/* Đề xuất xếp loại & Điều kiện loại trừ */}
                   <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Mức Xếp loại Đề xuất
+                      Xếp loại đề xuất
                     </span>
                     <div>
                       <Badge variant={rankProposal.rank === 'XUẤT SẮC' ? 'excellent' : rankProposal.rank === 'TỐT' ? 'good' : 'completed'}>
@@ -538,22 +553,18 @@ export const Module4_EvaluationScoring = () => {
 
                     {disciplineInfo && (
                       <div className="p-2 rounded bg-rose-50 text-rose-800 text-[11px] font-semibold">
-                        ⚠ Bị chặn không thể xếp loại Xuất sắc/Tốt do có Quyết định kỷ luật!
+                        Có quyết định kỷ luật: không được xếp Xuất sắc/Tốt.
                       </div>
                     )}
                   </div>
 
                   {/* Nút thao tác người có thẩm quyền */}
                   <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between space-y-3">
-                    <div>
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        Thẩm quyền Quyết định
-                      </span>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Người đứng đầu có quyền điều chỉnh xếp loại nhưng bắt buộc nhập lý do giải trình.
-                      </p>
-                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      Quyết định
+                    </span>
 
+                    {canManage && !isOwner ? (
                     <div className="space-y-2">
                       <Button
                         variant="outline"
@@ -569,7 +580,7 @@ export const Module4_EvaluationScoring = () => {
                           setAdjustModalOpen(true);
                         }}
                       >
-                        Điều chỉnh điểm / Xếp loại
+                        Điều chỉnh
                       </Button>
 
                       <Button
@@ -579,19 +590,24 @@ export const Module4_EvaluationScoring = () => {
                         icon={FileCheck}
                         onClick={() => handleSaveEvaluation(true)}
                       >
-                        Chốt & Ban hành Đánh giá
+                        Chốt kết quả
                       </Button>
                     </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">
+                        {targetPlan?.evaluationStatus === 'EVALUATED' ? 'Kết quả đã được chốt.' : 'Chờ người có thẩm quyền kết luận.'}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Audit trail if adjusted */}
                 {targetPlan?.isAdjusted && (
                   <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 text-xs text-amber-900 dark:text-amber-200 space-y-1">
-                    <strong>Thông tin điều chỉnh điểm của Người đứng đầu:</strong>
-                    <div>Điểm gốc: <strong>{targetPlan.originalScore} ({targetPlan.originalRank})</strong> $\to$ Điểm sau điều chỉnh: <strong>{targetPlan.finalScore} ({targetPlan.finalRank})</strong></div>
-                    <div>Người điều chỉnh: <strong>{targetPlan.adjustedBy}</strong> lúc {targetPlan.adjustedAt}</div>
-                    <div>Lý do điều chỉnh: <em>"{targetPlan.adjustReason}"</em></div>
+                    <strong>Đã điều chỉnh</strong>
+                    <div><strong>{targetPlan.originalScore} ({targetPlan.originalRank})</strong> → <strong>{targetPlan.finalScore} ({targetPlan.finalRank})</strong></div>
+                    <div><strong>{targetPlan.adjustedBy}</strong> lúc {targetPlan.adjustedAt}</div>
+                    <div><em>"{targetPlan.adjustReason}"</em></div>
                   </div>
                 )}
               </div>
@@ -605,8 +621,9 @@ export const Module4_EvaluationScoring = () => {
           ============================================================================== */}
       {activeTab === 'collective-meeting' && (
         <SectionCard
-          title="Nhập Biên bản & Kết quả Biểu quyết của Hội nghị Tập thể (Nghị định 90/2020/NĐ-CP)"
-          description="Ghi nhận thành phần tham dự, kết quả bỏ phiếu phân loại của tập thể đơn vị công tác"
+          icon={Vote}
+          title="Biên bản họp tập thể"
+          description="Theo Nghị định 90/2020: ghi nhận số người dự họp và kết quả bỏ phiếu đề xuất xếp loại của tập thể đơn vị."
         >
           <form onSubmit={handleSaveMeetingRecord} className="space-y-4 max-w-2xl text-xs">
             <div className="grid grid-cols-2 gap-4">
@@ -617,7 +634,7 @@ export const Module4_EvaluationScoring = () => {
                   onChange={(e) => setMeetingForm({ ...meetingForm, meetingDate: e.target.value })}
                 />
               </FormField>
-              <FormField label="Tổng số cán bộ tham dự *" required>
+              <FormField label="Số người dự họp" required>
                 <Input
                   type="number"
                   value={meetingForm.attendeesCount}
@@ -627,28 +644,28 @@ export const Module4_EvaluationScoring = () => {
             </div>
 
             <div className="grid grid-cols-4 gap-3">
-              <FormField label="Phiếu Xuất sắc:">
+              <FormField label="Xuất sắc">
                 <Input
                   type="number"
                   value={meetingForm.voteExcellent}
                   onChange={(e) => setMeetingForm({ ...meetingForm, voteExcellent: Number(e.target.value) })}
                 />
               </FormField>
-              <FormField label="Phiếu Tốt:">
+              <FormField label="Hoàn thành tốt">
                 <Input
                   type="number"
                   value={meetingForm.voteGood}
                   onChange={(e) => setMeetingForm({ ...meetingForm, voteGood: Number(e.target.value) })}
                 />
               </FormField>
-              <FormField label="Phiếu Hoàn thành:">
+              <FormField label="Hoàn thành">
                 <Input
                   type="number"
                   value={meetingForm.voteCompleted}
                   onChange={(e) => setMeetingForm({ ...meetingForm, voteCompleted: Number(e.target.value) })}
                 />
               </FormField>
-              <FormField label="Không hoàn thành:">
+              <FormField label="Không hoàn thành">
                 <Input
                   type="number"
                   value={meetingForm.voteFailed}
@@ -657,7 +674,7 @@ export const Module4_EvaluationScoring = () => {
               </FormField>
             </div>
 
-            <FormField label="Trích yếu biên bản hội nghị lấy ý kiến *">
+            <FormField label="Trích yếu biên bản">
               <textarea
                 rows={4}
                 className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
@@ -680,11 +697,12 @@ export const Module4_EvaluationScoring = () => {
           ============================================================================== */}
       {activeTab === '360-review' && (
         <SectionCard
-          title={`Phiếu Lấy Ý kiến Đánh giá Chéo 360°: ${targetPlan?.employeeName}`}
-          description="Đồng nghiệp đóng góp ý kiến về tinh thần hợp tác, thái độ công vụ và tính kỷ luật"
+          icon={Users2}
+          title={`Góp ý cho ${targetPlan?.employeeName}`}
+          description="Đồng nghiệp chấm điểm (0–100) về tinh thần hợp tác, thái độ phục vụ và kỷ luật. Điểm trung bình chiếm 20% điểm tổng hợp."
         >
           <form onSubmit={handleSavePeerReview} className="space-y-4 max-w-xl text-xs">
-            <FormField label="Điểm Tinh thần Hợp tác & Hỗ trợ (Max 100):">
+            <FormField label="Hợp tác, hỗ trợ">
               <Input
                 type="number"
                 value={peerForm.cooperationScore}
@@ -692,7 +710,7 @@ export const Module4_EvaluationScoring = () => {
               />
             </FormField>
 
-            <FormField label="Điểm Thái độ Phục vụ & Trách nhiệm (Max 100):">
+            <FormField label="Thái độ, trách nhiệm">
               <Input
                 type="number"
                 value={peerForm.attitudeScore}
@@ -700,7 +718,7 @@ export const Module4_EvaluationScoring = () => {
               />
             </FormField>
 
-            <FormField label="Điểm Kỷ luật Công vụ & Giờ giấc (Max 100):">
+            <FormField label="Kỷ luật, giờ giấc">
               <Input
                 type="number"
                 value={peerForm.disciplineScore}
@@ -708,7 +726,7 @@ export const Module4_EvaluationScoring = () => {
               />
             </FormField>
 
-            <FormField label="Nhận xét cụ thể của đồng nghiệp:">
+            <FormField label="Nhận xét">
               <textarea
                 rows={3}
                 className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
@@ -731,8 +749,9 @@ export const Module4_EvaluationScoring = () => {
           ============================================================================== */}
       {activeTab === 'batch-approval' && (
         <SectionCard
-          title="Màn hình Duyệt Hàng loạt Hồ sơ Đánh giá Đơn vị"
-          description="Cho phép Trưởng phòng hoặc Lãnh đạo chọn cùng lúc nhiều cán bộ để duyệt nhanh chốt kết quả"
+          icon={CheckSquare}
+          title="Duyệt hàng loạt"
+          description="Chọn nhiều cán bộ để chốt kết quả cùng lúc."
           action={
             <div className="flex items-center gap-2">
               <Button
@@ -751,14 +770,28 @@ export const Module4_EvaluationScoring = () => {
                 variant="primary"
                 size="sm"
                 disabled={selectedBatchIds.length === 0}
+                icon={CheckCircle2}
                 onClick={() => batchApproveEvaluations(selectedBatchIds, batchNote)}
               >
-                Phê duyệt ({selectedBatchIds.length}) hồ sơ
+                Chốt ({selectedBatchIds.length})
               </Button>
             </div>
           }
         >
           <div className="space-y-3">
+            <div
+              className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm ${
+                batchQuota.withinQuota
+                  ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                  : 'bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
+              }`}
+            >
+              {batchQuota.withinQuota ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+              <span>
+                Xuất sắc <strong>{batchExcellent}</strong> / tối đa <strong>{batchQuota.maxAllowed}</strong>
+                <span className="opacity-70"> (20% của {batchGood} Hoàn thành tốt)</span>
+              </span>
+            </div>
             <div className="space-y-2">
               {kpiPlans.map((plan) => {
                 const isSelected = selectedBatchIds.includes(plan.id);
@@ -785,18 +818,21 @@ export const Module4_EvaluationScoring = () => {
                       />
                       <div>
                         <strong className="text-sm text-slate-900 dark:text-slate-100">{plan.employeeName}</strong>
-                        <div className="text-slate-400">{plan.positionTitle} • {plan.departmentName}</div>
+                        <div className="text-slate-400">{plan.positionTitle} · {plan.departmentName}</div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <span className="text-slate-500">Điểm đánh giá:</span>
-                        <div className="font-bold text-primary-600 tabular-nums">{plan.finalScore || 88} điểm</div>
+                        <div className="font-semibold text-primary-600 tabular-nums">{plan.finalScore ? `${plan.finalScore} điểm` : '—'}</div>
                       </div>
-                      <Badge variant={plan.finalRank === 'XUẤT SẮC' ? 'excellent' : 'good'}>
-                        {plan.finalRank || 'TỐT'}
-                      </Badge>
+                      {plan.finalRank ? (
+                        <Badge variant={plan.finalRank === 'XUẤT SẮC' ? 'excellent' : plan.finalRank === 'TỐT' ? 'good' : 'completed'}>
+                          {plan.finalRank}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">Chưa xếp loại</Badge>
+                      )}
                     </div>
                   </div>
                 );
@@ -811,11 +847,12 @@ export const Module4_EvaluationScoring = () => {
           ============================================================================== */}
       {activeTab === 'calibration-adjust' && (
         <SectionCard
-          title="Cấu hình Quy tắc Khống chế Tỷ lệ & Hiệu chỉnh Xếp loại"
-          description="Thiết lập chính sách cảnh báo hoặc chặn cứng trần 20% Xuất sắc theo quy định"
+          icon={Shield}
+          title="Quy tắc tỷ lệ xếp loại"
+          description={EXCELLENT_QUOTA_INFO}
         >
           <div className="max-w-xl space-y-4 text-xs">
-            <FormField label="Chính sách khống chế trần Xuất sắc (Nghị định 90/2020):">
+            <FormField label="Khi vượt trần 20% Xuất sắc">
               <select
                 value={quotaPolicy}
                 onChange={(e) => {
@@ -856,7 +893,7 @@ export const Module4_EvaluationScoring = () => {
             </h3>
 
             <form onSubmit={handleSaveAdjustment} className="space-y-4 text-xs">
-              <FormField label="Điểm điều chỉnh mới *" required>
+              <FormField label="Điểm mới" required>
                 <Input
                   type="number"
                   step="0.1"
@@ -866,7 +903,7 @@ export const Module4_EvaluationScoring = () => {
                 />
               </FormField>
 
-              <FormField label="Mức xếp loại mới *" required>
+              <FormField label="Xếp loại mới" required>
                 <select
                   value={adjustForm.adjustedRank}
                   onChange={(e) => setAdjustForm({ ...adjustForm, adjustedRank: e.target.value })}
@@ -879,7 +916,7 @@ export const Module4_EvaluationScoring = () => {
                 </select>
               </FormField>
 
-              <FormField label="Lý do điều chỉnh (BẮT BUỘC theo kiểm toán) *" required>
+              <FormField label="Lý do điều chỉnh" hint="Bắt buộc, tối thiểu 10 ký tự; được lưu vào nhật ký." required>
                 <textarea
                   rows={3}
                   required
