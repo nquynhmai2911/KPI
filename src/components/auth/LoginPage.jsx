@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { getRoleLabel } from '../../utils/labels';
 import { InfoTip } from '../ui/InfoTip';
+import { Modal } from '../ui/Modal';
 
 const STEPS = [
   { icon: Target, label: 'Giao chỉ tiêu' },
@@ -106,12 +107,19 @@ export const LoginPage = () => {
 
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md space-y-8">
-          <div className="flex items-center justify-between">
+          <div className="lg:hidden flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center text-sm font-bold">KPI</div>
+            <div>
+              <div className="font-semibold text-slate-900 dark:text-white">Hệ thống đánh giá KPI</div>
+              <div className="text-sm text-slate-500">{isGov ? 'Cơ quan nhà nước' : 'Doanh nghiệp'}</div>
+            </div>
+          </div>
+          <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Đăng nhập</h2>
               <p className="text-sm text-slate-500 mt-1">Chào mừng bạn quay lại</p>
             </div>
-            <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+            <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1" role="group" aria-label="Loại hình đơn vị">
               {[
                 { value: 'GOVERNMENT', icon: Landmark, label: 'Nhà nước' },
                 { value: 'ENTERPRISE', icon: Building2, label: 'Doanh nghiệp' },
@@ -122,13 +130,14 @@ export const LoginPage = () => {
                   onClick={() => setSystemOperatingMode(value)}
                   title={label}
                   aria-label={label}
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center transition ${
+                  className={`h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-xs font-medium whitespace-nowrap transition cursor-pointer ${
                     systemOperatingMode === value
                       ? 'bg-white text-primary-600 shadow-sm dark:bg-slate-900'
                       : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
-                  <Icon size={18} />
+                  <Icon size={15} />
+                  {label}
                 </button>
               ))}
             </div>
@@ -136,7 +145,7 @@ export const LoginPage = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Email công vụ</label>
               <div className="relative">
                 <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
@@ -226,47 +235,49 @@ export const LoginPage = () => {
         </div>
       </div>
 
-      {showForgotPassword && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-              <Key className="w-5 h-5 text-primary-600" />
-              Khôi phục mật khẩu
-            </h3>
-            <p className="text-sm text-slate-500">Nhập email cơ quan, hệ thống sẽ gửi mã xác thực.</p>
-            <input
-              type="email"
-              value={forgotEmail}
-              onChange={(e) => setForgotEmail(e.target.value)}
-              placeholder="ten@coquan.gov.vn"
-              className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-            />
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowForgotPassword(false)}
-                className="px-4 h-10 rounded-xl text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!forgotEmail) {
-                    showToast('Vui lòng nhập email!', 'error');
-                    return;
-                  }
-                  showToast(`Đã gửi mã xác thực tới ${forgotEmail}. Mật khẩu tạm thời: MatKhau@2026!`);
-                  setShowForgotPassword(false);
-                }}
-                className="px-4 h-10 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 cursor-pointer"
-              >
-                Gửi mã
-              </button>
-            </div>
-          </div>
+      <Modal
+        open={showForgotPassword}
+        size="sm"
+        icon={Key}
+        title="Khôi phục mật khẩu"
+        onClose={() => setShowForgotPassword(false)}
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(false)}
+              className="px-4 h-9 rounded-lg text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!forgotEmail) {
+                  showToast('Vui lòng nhập email!', 'error');
+                  return;
+                }
+                showToast(`Đã gửi mã xác thực tới ${forgotEmail}. Mật khẩu tạm thời: MatKhau@2026!`);
+                setShowForgotPassword(false);
+              }}
+              className="px-4 h-9 rounded-lg text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 cursor-pointer"
+            >
+              Gửi mã
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-slate-500">Nhập email công vụ, hệ thống sẽ gửi mã xác thực.</p>
+          <input
+            type="email"
+            value={forgotEmail}
+            onChange={(e) => setForgotEmail(e.target.value)}
+            placeholder="ten@coquan.gov.vn"
+            className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+          />
         </div>
-      )}
+      </Modal>
     </div>
   );
 };
