@@ -1,25 +1,29 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { useApp } from './context/AppContext';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { Toast } from './components/common/Toast';
 import { QuickSearchModal } from './components/common/QuickSearchModal';
 import { OverviewDashboard } from './components/dashboard/OverviewDashboard';
-import { Module1_OrgSystem } from './components/modules/Module1_OrgSystem';
-import { Module2_KPILibraryPlanning } from './components/modules/Module2_KPILibraryPlanning';
-import { Module3_TrackingExecution } from './components/modules/Module3_TrackingExecution';
-import { Module4_EvaluationScoring } from './components/modules/Module4_EvaluationScoring';
-import { Module5_DashboardsReports } from './components/modules/Module5_DashboardsReports';
-import { Module6_SystemNonFunctional } from './components/modules/Module6_SystemNonFunctional';
-import { UiKitPage } from './components/dev/UiKitPage';
+
+const lazyNamed = (loader, name) => lazy(() => loader().then((m) => ({ default: m[name] })));
+const Module1_OrgSystem = lazyNamed(() => import('./components/modules/Module1_OrgSystem'), 'Module1_OrgSystem');
+const Module2_KPILibraryPlanning = lazyNamed(() => import('./components/modules/Module2_KPILibraryPlanning'), 'Module2_KPILibraryPlanning');
+const Module3_TrackingExecution = lazyNamed(() => import('./components/modules/Module3_TrackingExecution'), 'Module3_TrackingExecution');
+const Module4_EvaluationScoring = lazyNamed(() => import('./components/modules/Module4_EvaluationScoring'), 'Module4_EvaluationScoring');
+const Module5_DashboardsReports = lazyNamed(() => import('./components/modules/Module5_DashboardsReports'), 'Module5_DashboardsReports');
+const Module6_SystemNonFunctional = lazyNamed(() => import('./components/modules/Module6_SystemNonFunctional'), 'Module6_SystemNonFunctional');
+const PeriodManagement = lazyNamed(() => import('./components/modules/PeriodManagement'), 'PeriodManagement');
+const UiKitPage = lazyNamed(() => import('./components/dev/UiKitPage'), 'UiKitPage');
+
 import { LoginPage } from './components/auth/LoginPage';
 
 export const AppContent = () => {
-  const { activeModule, isAuthenticated } = useApp();
+  const { activeModule, isAuthenticated, activeRole } = useApp();
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-900 text-slate-100 font-sans antialiased">
+      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
         <LoginPage />
         <Toast />
       </div>
@@ -30,18 +34,23 @@ export const AppContent = () => {
     switch (activeModule) {
       case 'dashboards':
         return <OverviewDashboard />;
+      case 'periods':
+        return <PeriodManagement />;
       case 'org-system':
         return <Module1_OrgSystem />;
       case 'library':
+      case 'planning':
         return <Module2_KPILibraryPlanning />;
       case 'my-kpi':
+      case 'tracking':
         return <Module3_TrackingExecution />;
       case 'team-kpi':
+      case 'evaluation':
         return <Module4_EvaluationScoring />;
       case 'reports':
         return <Module5_DashboardsReports />;
       case 'non-functional':
-        return <Module6_SystemNonFunctional />;
+        return ['SYSTEM_ADMIN', 'AUDITOR', 'HR_OFFICER'].includes(activeRole) ? <Module6_SystemNonFunctional /> : <OverviewDashboard />;
       case 'ui-kit':
         return <UiKitPage />;
       default:
@@ -51,24 +60,24 @@ export const AppContent = () => {
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 font-sans antialiased text-slate-900 dark:text-slate-100">
-      {/* Sidebar Layout 260px / 72px / Mobile Drawer (Yêu cầu Bước 2) */}
       <Sidebar />
 
-      {/* Main Container */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-        {/* Header 64px cao với Segmented Mode, Ctrl+K, Demo Tools, Profile (Yêu cầu Bước 2) */}
         <Header />
-
-        {/* Content Body (max-width 1440px, padding 24px, gap 24px) (Yêu cầu Bước 2 & 4) */}
-        <main className="flex-1 p-6 max-w-[1440px] w-full mx-auto space-y-6">
-          {renderActiveModule()}
+        <main key={activeModule} className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8 max-w-[1400px] w-full mx-auto">
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center py-24">
+                <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+              </div>
+            }
+          >
+            {renderActiveModule()}
+          </Suspense>
         </main>
       </div>
 
-      {/* Global Quick Search Modal (Ctrl+K) */}
       <QuickSearchModal />
-
-      {/* Toast Alert System */}
       <Toast />
     </div>
   );
