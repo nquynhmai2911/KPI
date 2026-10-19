@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { RbacMatrixTab } from './RbacMatrixTab';
 import {
-  Shield,
   Bell,
   KeyRound,
   Database,
@@ -82,7 +81,6 @@ export const Module6_SystemNonFunctional = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={Shield}
         title="Quản trị hệ thống"
         subtitle="Phân quyền theo vai trò, nhật ký thao tác (phục vụ thanh tra, kiểm tra), gửi thông báo, đăng nhập một lần và sao lưu dữ liệu."
       />

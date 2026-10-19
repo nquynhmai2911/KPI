@@ -5,21 +5,12 @@ import { Badge } from '../../ui/Badge';
 import { InfoTip } from '../../ui/InfoTip';
 import { ROLE_LABELS, getScopeLabel } from '../../../utils/labels';
 import {
-  Shield,
   Copy,
   ToggleLeft,
   ToggleRight,
   Check,
   X,
   Search,
-  Filter,
-  Layers,
-  ShieldAlert,
-  Info,
-  Sparkles,
-  Users,
-  Lock,
-  Plus,
   RotateCcw,
 } from 'lucide-react';
 

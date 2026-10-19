@@ -11,7 +11,6 @@ import {
   Shield,
   Palette,
   X,
-  User,
   ArrowRight,
   Sparkles,
 } from 'lucide-react';

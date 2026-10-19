@@ -4,25 +4,16 @@ import {
   Award,
   UserCheck,
   Users2,
-  Calculator,
   CheckCircle2,
-  MessageSquare,
-  Sparkles,
   Save,
   Send,
-  Star,
   FileCheck,
-  Clock,
-  Layers,
   AlertTriangle,
-  History,
-  FileSpreadsheet,
   CheckSquare,
   Shield,
   Briefcase,
   ChevronRight,
   Edit3,
-  Lock,
   Vote,
   FileText,
   Check,
@@ -32,17 +23,14 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '../../common/PageHeader';
 import { SectionCard } from '../../common/SectionCard';
-import { StatCard } from '../../common/StatCard';
+
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { Input } from '../../ui/Input';
 import { Select } from '../../ui/Select';
 import { SegmentedControl } from '../../ui/SegmentedControl';
 import { FormField } from '../../common/FormField';
-import { DateText } from '../../common/DateText';
-import { NumberText } from '../../common/NumberText';
-import { StatusBadge } from '../../common/StatusBadge';
-import { ProgressBar } from '../../common/ProgressBar';
+
 import { EXCELLENT_QUOTA_INFO, checkExcellentQuota, getRankVariant, RANK_LABELS } from '../../../utils/labels';
 
 export const Module4_EvaluationScoring = () => {
@@ -238,7 +226,6 @@ export const Module4_EvaluationScoring = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={Award}
         title="Đánh giá & xếp loại"
         subtitle={
           systemOperatingMode === 'GOVERNMENT'

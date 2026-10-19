@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { AlertTriangle, Info, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 export const ConfirmDialog = ({

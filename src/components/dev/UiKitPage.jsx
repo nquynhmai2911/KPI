@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import {
   Palette,
-  CheckCircle2,
-  AlertTriangle,
-  XCircle,
-  Info,
   Users,
   Award,
   Clock,
@@ -12,22 +8,18 @@ import {
   Download,
   Trash2,
   Plus,
-  Search,
-  ExternalLink,
   Mail,
-  Lock,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/Card';
+
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { SegmentedControl } from '../ui/SegmentedControl';
-import { Skeleton } from '../ui/Skeleton';
 
 import { PageHeader } from '../common/PageHeader';
 import { StatCard } from '../common/StatCard';
-import { SectionCard } from '../common/SectionCard';
+
 import { StatusBadge } from '../common/StatusBadge';
 import { ProgressBar } from '../common/ProgressBar';
 import { DateText } from '../common/DateText';

@@ -10,25 +10,15 @@ import {
   TrendingUp,
   Award,
   CheckCircle2,
-  Calendar,
-  Layers,
-  ChevronRight,
-  Filter,
   DollarSign,
   Briefcase,
   FileText,
-  UserCheck,
   Building,
-  Target,
   Sparkles,
-  Search,
-  BarChart3,
   Building2,
   PieChart as PieChartIcon,
 } from 'lucide-react';
 import {
-  BarChart,
-  Bar,
   LineChart,
   Line,
   XAxis,
@@ -36,9 +26,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from 'recharts';
 import { PageHeader } from '../../common/PageHeader';
 import { SectionCard } from '../../common/SectionCard';
@@ -49,7 +36,7 @@ import { RankDistributionChart } from '../../dashboard/RankDistributionChart';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { SegmentedControl } from '../../ui/SegmentedControl';
-import { DateText } from '../../common/DateText';
+
 import { NumberText } from '../../common/NumberText';
 
 export const Module5_DashboardsReports = () => {
@@ -120,7 +107,6 @@ export const Module5_DashboardsReports = () => {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        icon={BarChart3}
         title="Kết quả & báo cáo"
         subtitle={
           systemOperatingMode === 'GOVERNMENT'

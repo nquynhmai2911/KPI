@@ -10,41 +10,23 @@ import {
   Trash2,
   ChevronDown,
   ChevronRight,
-  Shield,
   UserCheck,
   Building,
   Check,
   Search,
-  Filter,
   FileSpreadsheet,
   Download,
   Upload,
   AlertTriangle,
   XCircle,
   CheckCircle2,
-  Lock,
   Key,
   Smartphone,
-  Eye,
-  RefreshCw,
-  FolderTree,
   UserPlus,
-  FileText,
-  BadgeCheck,
 } from 'lucide-react';
-import { Button } from '../../ui/Button';
-import { Badge } from '../../ui/Badge';
-import { Card, CardHeader, CardTitle, CardContent } from '../../ui/Card';
-import { Input } from '../../ui/Input';
-import { Select } from '../../ui/Select';
+
 import { SegmentedControl } from '../../ui/SegmentedControl';
 import { PageHeader } from '../../common/PageHeader';
-import { SectionCard } from '../../common/SectionCard';
-import { StatCard } from '../../common/StatCard';
-import { FormField } from '../../common/FormField';
-import { UserAvatarCell } from '../../common/UserAvatarCell';
-import { DateText } from '../../common/DateText';
-import { NumberText } from '../../common/NumberText';
 
 const MAIN_ROLES = ['SYSTEM_ADMIN', 'EXECUTIVE', 'UNIT_HEAD', 'LINE_MANAGER', 'HR_OFFICER', 'EMPLOYEE', 'COUNCIL_MEMBER', 'SECRETARY', 'AUDITOR'];
 const DEFAULT_SCOPE = {
@@ -570,7 +552,6 @@ export const Module1_OrgSystem = () => {
     <div className="space-y-6">
       {/* Page Header (Yêu cầu Bước 5) */}
       <PageHeader
-        icon={Network}
         title="Tổ chức & cán bộ"
         subtitle="Cây đơn vị, vị trí việc làm và hồ sơ cán bộ là nền tảng để giao KPI đúng người, xác định cấp trên đánh giá và phạm vi dữ liệu (Nghị định 90/2020, 48/2023)."
       />

@@ -8,33 +8,25 @@ import {
   FileText,
   Clock,
   Paperclip,
-  ExternalLink,
   Plus,
   Trash2,
-  Calendar,
   AlertTriangle,
   Server,
   Zap,
-  Users,
   MessageSquare,
   CheckCircle2,
-  XCircle,
   Play,
-  Send,
-  Eye,
   Building,
   Target,
-  Sparkles,
 } from 'lucide-react';
 import { PageHeader } from '../../common/PageHeader';
 import { SectionCard } from '../../common/SectionCard';
 import { StatCard } from '../../common/StatCard';
-import { DataTable } from '../../common/DataTable';
-import { UserAvatarCell } from '../../common/UserAvatarCell';
+
 import { DateText } from '../../common/DateText';
 import { NumberText } from '../../common/NumberText';
 import { ProgressBar } from '../../common/ProgressBar';
-import { StatusBadge } from '../../common/StatusBadge';
+
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { Input } from '../../ui/Input';
@@ -184,7 +176,6 @@ export const Module3_TrackingExecution = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={TrendingUp}
         title="Thực hiện & cập nhật kết quả"
         subtitle="Cán bộ cập nhật kết quả định kỳ kèm minh chứng; quản lý xác nhận số liệu và trao đổi 1:1 khi chỉ tiêu chậm tiến độ. Hệ thống tự cảnh báo chỉ tiêu dưới 70%."
       />
