@@ -432,7 +432,7 @@ export const Module5_DashboardsReports = () => {
                   setShowPrintModal(true);
                 }}
               >
-                Xem & In Mẫu 01
+                In mẫu 01
               </Button>
             </div>
 
@@ -451,7 +451,7 @@ export const Module5_DashboardsReports = () => {
                   setShowPrintModal(true);
                 }}
               >
-                Xem & In Biên bản
+                In biên bản
               </Button>
             </div>
 
@@ -470,7 +470,7 @@ export const Module5_DashboardsReports = () => {
                   setShowPrintModal(true);
                 }}
               >
-                Xem & In Bảng kê
+                In bảng kê
               </Button>
             </div>
           </div>

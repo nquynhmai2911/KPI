@@ -494,7 +494,7 @@ export const Module1_OrgSystem = () => {
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className={`text-xs font-bold truncate ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-slate-800 dark:text-slate-200'}`}>
+                <span className={`text-xs font-bold leading-snug ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-slate-800 dark:text-slate-200'}`}>
                   {node.name}
                 </span>
                 <span className="whitespace-nowrap text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
@@ -626,7 +626,7 @@ export const Module1_OrgSystem = () => {
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm"
                 >
                   <Plus size={14} />
-                  Thêm Đơn Vị
+                  Thêm đơn vị
                 </button>
               </div>
             </div>
@@ -672,7 +672,7 @@ export const Module1_OrgSystem = () => {
                         ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300'
                         : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
                     }`}>
-                      {selectedDept.operatingMode === 'GOVERNMENT' ? 'Cơ quan Nhà nước' : selectedDept.operatingMode === 'ENTERPRISE' ? 'Khối Doanh nghiệp' : 'Mô hình Kết hợp'}
+                      {selectedDept.operatingMode === 'GOVERNMENT' ? 'Cơ quan Nhà nước' : selectedDept.operatingMode === 'ENTERPRISE' ? 'Khối Doanh nghiệp' : 'Kết hợp'}
                     </span>
                   </div>
 
@@ -752,10 +752,10 @@ export const Module1_OrgSystem = () => {
                               className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200"
                             />
                             <div className="min-w-0">
-                              <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                              <div className="text-xs font-bold text-slate-900 dark:text-white leading-snug break-words">
                                 {staff.name}
                               </div>
-                              <div className="text-[10px] text-slate-400 truncate">
+                              <div className="text-[10px] text-slate-400 leading-snug break-words">
                                 {staff.positionTitle || 'Chuyên viên'} • {staff.email}
                               </div>
                             </div>
@@ -1122,7 +1122,7 @@ export const Module1_OrgSystem = () => {
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <Building className="text-blue-600" size={18} />
-                {editingDept ? 'Cập Nhật Đơn Vị Hành Chính' : 'Thêm Mới Đơn Vị Vào Cây Tổ Chức'}
+                {editingDept ? 'Sửa đơn vị' : 'Thêm đơn vị'}
               </h3>
               <button onClick={() => setShowDeptModal(false)} className="text-slate-400 hover:text-slate-600">
                 ✕
@@ -1133,7 +1133,7 @@ export const Module1_OrgSystem = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Mã Đơn Vị <span className="text-red-500">*</span>
+                    Mã đơn vị <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1147,7 +1147,7 @@ export const Module1_OrgSystem = () => {
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Cấp Bậc Phân Cấp
+                    Cấp đơn vị
                   </label>
                   <select
                     value={deptForm.level}
@@ -1168,7 +1168,7 @@ export const Module1_OrgSystem = () => {
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                  Tên Đầy Đủ Đơn Vị <span className="text-red-500">*</span>
+                  Tên đơn vị <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -1183,7 +1183,7 @@ export const Module1_OrgSystem = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Đơn Vị Cấp Trên Trực Thuộc
+                    Đơn vị cấp trên
                   </label>
                   <select
                     value={deptForm.parentId || ''}
@@ -1203,7 +1203,7 @@ export const Module1_OrgSystem = () => {
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Chế Độ Đánh Giá Áp Dụng
+                    Chế độ đánh giá
                   </label>
                   <select
                     value={deptForm.operatingMode}
@@ -1212,14 +1212,14 @@ export const Module1_OrgSystem = () => {
                   >
                     <option value="GOVERNMENT">Cơ quan Nhà nước (Nghị định 90/2020)</option>
                     <option value="ENTERPRISE">Doanh nghiệp (KPI / OKR / BSC / 360°)</option>
-                    <option value="HYBRID">Mô hình Kết hợp (Hybrid)</option>
+                    <option value="HYBRID">Kết hợp</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                  Mô Tả Chức Năng Nhiệm Vụ
+                  Chức năng, nhiệm vụ
                 </label>
                 <textarea
                   rows={2}
@@ -1242,7 +1242,7 @@ export const Module1_OrgSystem = () => {
                   type="submit"
                   className="px-5 py-2 font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm"
                 >
-                  {editingDept ? 'Lưu Thay Đổi' : 'Thêm Đơn Vị'}
+                  {editingDept ? 'Lưu thay đổi' : 'Thêm đơn vị'}
                 </button>
               </div>
             </form>
@@ -1259,7 +1259,7 @@ export const Module1_OrgSystem = () => {
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <UserCheck className="text-blue-600" size={18} />
-                {editingUser ? 'Cập Nhật Hồ Sơ Cán Bộ' : 'Thêm Mới Cán Bộ Vào Hệ Thống'}
+                {editingUser ? 'Sửa hồ sơ cán bộ' : 'Thêm cán bộ'}
               </h3>
               <button onClick={() => setShowUserModal(false)} className="text-slate-400 hover:text-slate-600">
                 ✕
@@ -1270,7 +1270,7 @@ export const Module1_OrgSystem = () => {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Mã Cán Bộ <span className="text-red-500">*</span>
+                    Mã cán bộ <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1283,7 +1283,7 @@ export const Module1_OrgSystem = () => {
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Họ và Tên <span className="text-red-500">*</span>
+                    Họ và tên <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1311,7 +1311,7 @@ export const Module1_OrgSystem = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Địa Chỉ Email <span className="text-red-500">*</span>
+                    Email <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
@@ -1325,7 +1325,7 @@ export const Module1_OrgSystem = () => {
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Số Điện Thoại
+                    Số điện thoại
                   </label>
                   <input
                     type="text"
@@ -1340,7 +1340,7 @@ export const Module1_OrgSystem = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Đơn Vị Phòng Ban <span className="text-red-500">*</span>
+                    Đơn vị <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={userForm.departmentId}
@@ -1357,7 +1357,7 @@ export const Module1_OrgSystem = () => {
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Vị Trí Việc Làm / Chức Danh
+                    Vị trí việc làm
                   </label>
                   <select
                     value={userForm.positionId}
@@ -1376,7 +1376,7 @@ export const Module1_OrgSystem = () => {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Loại Đối Tượng Cán Bộ
+                    Loại đối tượng
                   </label>
                   <select
                     value={userForm.employeeType}
@@ -1393,7 +1393,7 @@ export const Module1_OrgSystem = () => {
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Ngạch Công Chức
+                    Ngạch
                   </label>
                   <select
                     value={userForm.cadreRank}
@@ -1409,7 +1409,7 @@ export const Module1_OrgSystem = () => {
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Hệ Số Lương
+                    Hệ số lương
                   </label>
                   <input
                     type="number"
@@ -1446,7 +1446,7 @@ export const Module1_OrgSystem = () => {
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Phạm Vi Dữ Liệu (Data Scope)
+                    Phạm vi dữ liệu
                   </label>
                   <select
                     value={userForm.dataScope}
@@ -1473,7 +1473,7 @@ export const Module1_OrgSystem = () => {
                   type="submit"
                   className="px-5 py-2 font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm"
                 >
-                  {editingUser ? 'Cập Nhật Hồ Sơ' : 'Lưu Hồ Sơ Cán Bộ'}
+                  {editingUser ? 'Lưu hồ sơ' : 'Thêm cán bộ'}
                 </button>
               </div>
             </form>
@@ -1492,7 +1492,7 @@ export const Module1_OrgSystem = () => {
               <div>
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                   <FileSpreadsheet className="text-emerald-600" size={20} />
-                  Nhập Dữ Liệu Nhân Sự Từ Excel (Có Kiểm Tra & Báo Cáo Lỗi Từng Dòng)
+                  Nhập cán bộ từ Excel
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Kiểm tra tính toàn vẹn của dữ liệu: trùng mã, sai format email, sai mã đơn vị trước khi lưu vào CSDL
@@ -1585,7 +1585,7 @@ export const Module1_OrgSystem = () => {
                     <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2.5 font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
                       <span className="flex items-center gap-2">
                         <AlertTriangle size={15} className="text-amber-500" />
-                        Chi Tiết Lỗi Kiểm Tra Từng Dòng ({importReport.errors.length} lỗi)
+                        Chi tiết lỗi ({importReport.errors.length} lỗi)
                       </span>
                       <span className="text-[10px] font-normal text-slate-400">
                         Hệ thống kiểm tra tính hợp lệ của từng ô dữ liệu

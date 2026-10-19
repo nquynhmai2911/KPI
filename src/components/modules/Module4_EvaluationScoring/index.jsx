@@ -685,7 +685,7 @@ export const Module4_EvaluationScoring = () => {
 
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <Button variant="primary" size="sm" type="submit" icon={Save}>
-                Lưu Biên bản Hội nghị Tập thể
+                Lưu biên bản họp
               </Button>
             </div>
           </form>
@@ -737,7 +737,7 @@ export const Module4_EvaluationScoring = () => {
 
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <Button variant="primary" size="sm" type="submit" icon={Send}>
-                Gửi Phiếu Đánh giá 360°
+                Gửi phiếu góp ý
               </Button>
             </div>
           </form>
