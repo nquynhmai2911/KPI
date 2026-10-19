@@ -11,12 +11,14 @@ export const Button = React.forwardRef(
       isLoading = false,
       disabled = false,
       type = 'button',
-      leftIcon: LeftIcon,
+      leftIcon,
+      icon,
       rightIcon: RightIcon,
       ...props
     },
     ref
   ) => {
+    const LeftIcon = leftIcon || icon;
     const baseStyles =
       'inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]';
 

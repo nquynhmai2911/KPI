@@ -4,14 +4,17 @@ import React from 'react';
  * Thanh tiến độ có ngữ nghĩa màu sắc tự động theo tỷ lệ hoàn thành (%)
  */
 export const ProgressBar = ({
-  value = 0,
+  value,
+  progress,
   max = 100,
   size = 'md', // 'sm' (6px) | 'md' (8px) | 'lg' (12px)
-  showValue = false,
+  showValue,
+  showLabel,
   className = '',
   customColor,
 }) => {
-  const percentage = Math.max(0, Number(value) || 0);
+  const percentage = Math.max(0, Number(value ?? progress) || 0);
+  showValue = showValue ?? showLabel ?? false;
   const normalizedRatio = max > 0 ? (percentage / max) * 100 : 0;
   const clampedWidth = Math.min(100, normalizedRatio);
 
@@ -19,10 +22,8 @@ export const ProgressBar = ({
   // < 50%: Đỏ (chậm tiến độ nghiêm trọng)
   // 50% - 79%: Vàng (cần đôn đốc)
   // 80% - 100%: Xanh lá (đạt yêu cầu)
-  // > 100%: Tím (vượt mức kế hoạch)
   const getSemanticColor = () => {
     if (customColor) return customColor;
-    if (percentage > 100) return 'bg-purple-600 dark:bg-purple-500';
     if (percentage >= 80) return 'bg-emerald-500 dark:bg-emerald-400';
     if (percentage >= 50) return 'bg-amber-500 dark:bg-amber-400';
     return 'bg-rose-500 dark:bg-rose-400';

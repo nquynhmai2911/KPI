@@ -108,6 +108,14 @@
   --text-muted: #94a3b8;
   --text-on-primary: #ffffff;
 
+  /* Bí danh cho các lớp CSS cũ (.btn, .form-control, .table-custom, .modal-*) */
+  --bg-card: var(--bg-surface);
+  --bg-card-hover: var(--bg-surface-hover);
+  --text-main: var(--text-primary);
+  --text-light: var(--text-muted);
+  --border-color: var(--border-default);
+  --accent-glow: rgba(37, 99, 235, 0.18);
+
   /* Spacing Grid (Bội số 4px) */
   --spacing-1: 4px;
   --spacing-2: 8px;

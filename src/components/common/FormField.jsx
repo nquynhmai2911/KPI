@@ -1,4 +1,5 @@
 import React from 'react';
+import { InfoTip } from '../ui/InfoTip';
 
 export const FormField = ({
   label,
@@ -14,24 +15,17 @@ export const FormField = ({
       {label && (
         <label
           htmlFor={id}
-          className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1"
+          className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1"
         >
           <span>{label}</span>
-          {required && <span className="text-rose-500 font-black">*</span>}
+          {required && <span className="text-rose-500">*</span>}
+          {hint && <InfoTip size={13}>{hint}</InfoTip>}
         </label>
       )}
 
       {children}
 
-      {error ? (
-        <span className="text-xs text-rose-500 font-medium leading-tight">
-          {error}
-        </span>
-      ) : hint ? (
-        <span className="text-xs text-slate-400 dark:text-slate-500 leading-tight">
-          {hint}
-        </span>
-      ) : null}
+      {error && <span className="text-xs text-rose-500 font-medium leading-tight">{error}</span>}
     </div>
   );
 };

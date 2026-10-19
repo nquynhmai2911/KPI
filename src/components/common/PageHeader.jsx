@@ -1,59 +1,32 @@
 import React from 'react';
-import { ChevronRight } from 'lucide-react';
+import { InfoTip } from '../ui/InfoTip';
 
+// Breadcrumb đã hiển thị trên thanh Header nên không lặp lại ở đây
 export const PageHeader = ({
   title,
   subtitle,
-  breadcrumbs = [], // [{ label: 'Trang chủ', onClick?: () => void, active?: boolean }]
+  icon: Icon,
   actions,
   badge,
   className = '',
 }) => {
   return (
-    <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-1 ${className}`}>
-      <div>
-        {breadcrumbs.length > 0 && (
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-1.5 flex-wrap">
-            {breadcrumbs.map((item, index) => {
-              const isLast = index === breadcrumbs.length - 1;
-              return (
-                <React.Fragment key={index}>
-                  {index > 0 && <ChevronRight size={12} className="text-slate-400" />}
-                  {item.onClick && !isLast ? (
-                    <button
-                      type="button"
-                      onClick={item.onClick}
-                      className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
-                    >
-                      {item.label}
-                    </button>
-                  ) : (
-                    <span className={isLast ? 'font-semibold text-slate-800 dark:text-slate-200' : ''}>
-                      {item.label}
-                    </span>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </nav>
+    <div className={`flex flex-wrap items-center justify-between gap-x-6 gap-y-4 ${className}`}>
+      <div className="flex items-center gap-3 min-w-0">
+        {Icon && (
+          <span className="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-primary-600/20">
+            <Icon size={20} />
+          </span>
         )}
-
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
-            {title}
-          </h1>
-          {badge && <div>{badge}</div>}
-        </div>
-
-        {subtitle && (
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-3xl leading-relaxed">
-            {subtitle}
-          </p>
-        )}
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          {title}
+        </h1>
+        {subtitle && <InfoTip size={16}>{subtitle}</InfoTip>}
+        {badge && <div className="hidden sm:block">{badge}</div>}
       </div>
 
       {actions && (
-        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2 max-w-full overflow-x-auto">
           {actions}
         </div>
       )}
