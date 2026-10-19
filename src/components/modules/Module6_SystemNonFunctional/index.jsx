@@ -240,10 +240,10 @@ export const Module6_SystemNonFunctional = () => {
               </select>
             </FormField>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField label="Mã tổ chức (Tenant ID)">
+              <FormField label="Mã tổ chức">
                 <Input value={ssoConfig.tenantId} onChange={(e) => setSsoConfig({ ...ssoConfig, tenantId: e.target.value })} />
               </FormField>
-              <FormField label="Mã ứng dụng (Client ID)">
+              <FormField label="Mã ứng dụng">
                 <Input value={ssoConfig.clientId} onChange={(e) => setSsoConfig({ ...ssoConfig, clientId: e.target.value })} />
               </FormField>
             </div>

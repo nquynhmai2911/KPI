@@ -90,7 +90,7 @@ export const Module3_TrackingExecution = () => {
     employeeId: 'usr-04',
     employeeName: 'Phạm Đức Thắng',
     date: new Date().toISOString().split('T')[0],
-    topics: 'Rà soát tiến độ chỉ tiêu sprint và tháo gỡ khó khăn kết nối hạ tầng',
+    topics: 'Rà soát tiến độ chỉ tiêu và tháo gỡ khó khăn kết nối hạ tầng',
     progressNotes: 'Đã hoàn thành 95% mục tiêu cam kết giữa kỳ.',
     blockers: 'Cần mở cổng firewall kết nối máy chủ dữ liệu ngoài.',
     nextMeetingDate: '2026-10-30',
@@ -635,10 +635,10 @@ export const Module3_TrackingExecution = () => {
             <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-3">
               <Zap className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <strong>Quy tắc hoạt động của Scheduler Service:</strong>
+                <strong>Quy tắc quét tự động:</strong>
                 <p>1. Tự động kiểm tra thời hạn kỳ đánh giá và nhắc nhở cán bộ trước 3 ngày.</p>
                 <p>2. Cảnh báo nguy cơ không đạt đối với các KPI có tiến độ hoàn thành dưới 70% khi thời gian kỳ đánh giá đã trôi qua hơn 50%.</p>
-                <p>3. Gửi thông báo trực tiếp qua Notification Center và email công vụ của cán bộ.</p>
+                <p>3. Gửi thông báo trực tiếp qua mục Thông báo và email công vụ của cán bộ.</p>
               </div>
             </div>
 

@@ -817,7 +817,7 @@ export const Module1_OrgSystem = () => {
                   className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition-all"
                 >
                   <FileSpreadsheet size={15} />
-                  Import Excel (Có Báo Cáo Lỗi)
+                  Nhập từ Excel
                 </button>
 
                 <button
@@ -1549,14 +1549,14 @@ export const Module1_OrgSystem = () => {
                     }}
                     className="px-3 py-1.5 font-bold bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5"
                   >
-                    <Download size={13} /> Tải file mẫu .CSV
+                    <Download size={13} /> Tải tệp mẫu .CSV
                   </button>
                   <button
                     type="button"
                     onClick={handleRunExcelValidation}
                     className="px-3.5 py-1.5 font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm"
                   >
-                    <Upload size={13} /> Nạp Dữ Liệu Thử Nghiệm (6 dòng mẫu)
+                    <Upload size={13} /> Dùng dữ liệu mẫu (6 dòng)
                   </button>
                 </div>
               </div>
@@ -1679,7 +1679,7 @@ export const Module1_OrgSystem = () => {
                   }`}
                 >
                   <Check size={16} />
-                  Xác Nhận Import ({importSkipErrors ? importReport.validCount : importReport.totalRows} Cán Bộ)
+                  Xác nhận nhập ({importSkipErrors ? importReport.validCount : importReport.totalRows} cán bộ)
                 </button>
               )}
             </div>

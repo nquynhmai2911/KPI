@@ -510,7 +510,7 @@ export const Module5_DashboardsReports = () => {
               <div className="space-y-1 text-xs">
                 <div>Họ và tên: <strong>Phạm Đức Thắng</strong></div>
                 <div>Chức vụ, chức danh: <strong>Kỹ sư phần mềm chính</strong></div>
-                <div>Đơn vị công tác: <strong>Tổ Kỹ thuật Backend & Dữ liệu lớn</strong></div>
+                <div>Đơn vị công tác: <strong>Tổ Kỹ thuật Hệ thống & Dữ liệu lớn</strong></div>
                 <div>Kỳ đánh giá: <strong>Quý 4 / Năm 2026</strong></div>
               </div>
 

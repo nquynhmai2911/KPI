@@ -19,7 +19,7 @@ import { getRoleLabel } from '../utils/labels';
 
 const AppContext = createContext();
 
-const STORAGE_KEY = 'GOV_KPI_SYSTEM_STATE_V3';
+const STORAGE_KEY = 'GOV_KPI_SYSTEM_STATE_V4';
 
 export const AppProvider = ({ children }) => {
   // Load state from localStorage or initialData
@@ -129,12 +129,12 @@ export const AppProvider = ({ children }) => {
             managerId: 'usr-02',
             managerName: 'Lê Hoàng Minh',
             date: '2026-10-14',
-            topics: 'Rà soát tiến độ tối ưu hóa API và bàn giải pháp bổ sung cache Redis',
-            progressNotes: 'Sprint 2 đã hoàn thành 98%, các API chính đạt độ trễ 185ms.',
-            blockers: 'Cần sự hỗ trợ của phòng Hạ tầng để mở thêm port kết nối Redis Cluster.',
+            topics: 'Rà soát tiến độ tối ưu hóa API và bàn giải pháp bổ sung bộ nhớ đệm',
+            progressNotes: 'Đợt 2 đã hoàn thành 98%, các chức năng chính phản hồi trong 185ms.',
+            blockers: 'Cần sự hỗ trợ của phòng Hạ tầng để mở thêm cổng kết nối máy chủ bộ nhớ đệm.',
             actionItems: [
-              { id: 'act-1', task: 'Làm việc với Đỗ Hải Nam (PHT) cấp quyền kết nối Redis', assignee: 'Phạm Đức Thắng', dueDate: '2026-10-18', status: 'IN_PROGRESS' },
-              { id: 'act-2', task: 'Chạy lại benchmark tải 5000 CCU trước ngày 22/10', assignee: 'Phạm Đức Thắng', dueDate: '2026-10-22', status: 'PENDING' },
+              { id: 'act-1', task: 'Làm việc với Đỗ Hải Nam (PHT) cấp quyền kết nối máy chủ bộ nhớ đệm', assignee: 'Phạm Đức Thắng', dueDate: '2026-10-18', status: 'IN_PROGRESS' },
+              { id: 'act-2', task: 'Kiểm thử tải lại với 5.000 người dùng đồng thời trước 22/10', assignee: 'Phạm Đức Thắng', dueDate: '2026-10-22', status: 'PENDING' },
             ],
             status: 'COMPLETED',
             nextMeetingDate: '2026-10-28',
@@ -174,7 +174,7 @@ export const AppProvider = ({ children }) => {
             employeeId: 'usr-04',
             employeeName: 'Phạm Đức Thắng',
             departmentId: 'dept-01-01-01',
-            departmentName: 'Tổ Kỹ thuật Backend & Dữ liệu lớn',
+            departmentName: 'Tổ Kỹ thuật Hệ thống & Dữ liệu lớn',
             meetingDate: '2026-10-16',
             attendeesCount: 12,
             totalVotes: 12,
@@ -659,7 +659,7 @@ export const AppProvider = ({ children }) => {
 
       setUsers((prev) => [...newUsersList, ...prev]);
       importedCount = newUsersList.length;
-      logAudit('IMPORT_EXCEL', 'Module 1: Nhân sự', `Import thành công ${importedCount} hồ sơ cán bộ từ file Excel`);
+      logAudit('IMPORT_EXCEL', 'Module 1: Nhân sự', `Nhập thành công ${importedCount} hồ sơ cán bộ từ tệp Excel`);
       showToast(`Đã import thành công ${importedCount} cán bộ vào hệ thống!`);
     }
 
@@ -1025,7 +1025,7 @@ export const AppProvider = ({ children }) => {
     if (validRows.length > 0 && (skipErrors || errors.length === 0)) {
       setKpiLibrary((prev) => [...validRows, ...prev]);
       importedCount = validRows.length;
-      logAudit('IMPORT_EXCEL', 'Module 2: Thư viện KPI', `Import thành công ${importedCount} chỉ tiêu KPI từ file Excel`);
+      logAudit('IMPORT_EXCEL', 'Module 2: Thư viện KPI', `Nhập thành công ${importedCount} chỉ tiêu KPI từ tệp Excel`);
       showToast(`Đã import thành công ${importedCount} chỉ tiêu KPI vào thư viện!`);
     }
 
@@ -1147,7 +1147,7 @@ export const AppProvider = ({ children }) => {
       })
     );
 
-    logAudit('CHECKIN_PROGRESS', 'Module 3: Theo dõi Tiến độ', `Check-in chỉ tiêu: Giá trị mới = ${checkinData.actualValue}`);
+    logAudit('CHECKIN_PROGRESS', 'Module 3: Theo dõi Tiến độ', `Cập nhật chỉ tiêu: giá trị mới = ${checkinData.actualValue}`);
     showToast('Đã cập nhật kết quả thực hiện!');
   };
 
@@ -1343,7 +1343,7 @@ export const AppProvider = ({ children }) => {
         return { ...p, items: updatedItems };
       })
     );
-    logAudit('CONFIRM_CHECKIN', 'Module 3: Xác nhận Số liệu', `Quản lý xác nhận check-in ID: ${checkinId} trạng thái: ${status}`);
+    logAudit('CONFIRM_CHECKIN', 'Module 3: Xác nhận Số liệu', `Quản lý ${status === 'CONFIRMED' ? 'xác nhận' : 'trả lại'} số liệu cập nhật ${checkinId}`);
     showToast(status === 'CONFIRMED' ? 'Đã xác nhận kết quả thực hiện thành công!' : 'Đã gửi yêu cầu bổ sung minh chứng!');
   };
 
@@ -1357,7 +1357,7 @@ export const AppProvider = ({ children }) => {
       ...meetingData,
     };
     setMeetings1on1((prev) => [newMeeting, ...prev]);
-    logAudit('SCHEDULE_1ON1', 'Module 3: Check-in 1:1', `Lưu biên bản trao đổi 1:1 với cán bộ: ${meetingData.employeeName}`);
+    logAudit('SCHEDULE_1ON1', 'Module 3: Trao đổi 1:1', `Lưu biên bản trao đổi 1:1 với cán bộ: ${meetingData.employeeName}`);
     addNotification('Biên bản trao đổi 1:1 mới', `Quản lý vừa cập nhật nội dung trao đổi và hành động tiếp theo kỳ này.`, 'INFO', 'my-kpi');
     showToast('Đã lưu biên bản trao đổi 1:1!');
   };
@@ -1395,7 +1395,7 @@ export const AppProvider = ({ children }) => {
     };
 
     setSchedulerJobLogs((prev) => [logEntry, ...prev]);
-    logAudit('RUN_SCHEDULER_JOB', 'Hệ thống Job Nền', `Chạy quét cảnh báo tiến độ tự động: ${atRiskCount} cảnh báo.`);
+    logAudit('RUN_SCHEDULER_JOB', 'Cảnh báo tự động', `Chạy quét cảnh báo tiến độ tự động: ${atRiskCount} cảnh báo.`);
     showToast(`Đã quét ${totalScanned} chỉ tiêu, gửi ${atRiskCount} cảnh báo!`, 'success');
     return logEntry;
   };
