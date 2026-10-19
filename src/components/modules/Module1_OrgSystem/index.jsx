@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { getRoleLabel, getScopeLabel } from '../../../utils/labels';
 import {
   Network,
   Briefcase,
@@ -44,6 +45,19 @@ import { FormField } from '../../common/FormField';
 import { UserAvatarCell } from '../../common/UserAvatarCell';
 import { DateText } from '../../common/DateText';
 import { NumberText } from '../../common/NumberText';
+
+const MAIN_ROLES = ['SYSTEM_ADMIN', 'EXECUTIVE', 'UNIT_HEAD', 'LINE_MANAGER', 'HR_OFFICER', 'EMPLOYEE', 'COUNCIL_MEMBER', 'SECRETARY', 'AUDITOR'];
+const DEFAULT_SCOPE = {
+  SYSTEM_ADMIN: 'ALL',
+  EXECUTIVE: 'ALL',
+  HR_OFFICER: 'ALL',
+  AUDITOR: 'ALL',
+  UNIT_HEAD: 'UNIT_AND_CHILDREN',
+  LINE_MANAGER: 'OWN_UNIT',
+  COUNCIL_MEMBER: 'ASSIGNED',
+  SECRETARY: 'ASSIGNED',
+  EMPLOYEE: 'SELF',
+};
 
 export const Module1_OrgSystem = () => {
   const {
@@ -353,7 +367,7 @@ export const Module1_OrgSystem = () => {
       salaryCoefficient: u.salaryCoefficient || 2.34,
       role: u.role,
       roleTitle: u.roleTitle,
-      dataScope: u.dataScope || (u.role === 'ADMIN' ? 'ALL' : u.role === 'MANAGER' ? 'DEPARTMENT_AND_CHILDREN' : 'SELF_ONLY'),
+      dataScope: u.dataScope || DEFAULT_SCOPE[u.role] || 'SELF',
     });
     setShowUserModal(true);
   };
@@ -556,30 +570,19 @@ export const Module1_OrgSystem = () => {
     <div className="space-y-6">
       {/* Page Header (Yêu cầu Bước 5) */}
       <PageHeader
-        breadcrumbs={[
-          { label: 'Trang chủ', onClick: () => {} },
-          { label: 'Cơ cấu & Cán bộ' },
-          { label: activeTab === 'org-tree' ? 'Cây đơn vị' : activeTab === 'employees' ? 'Hồ sơ nhân sự' : 'Vị trí việc làm' },
+        icon={Network}
+        title="Tổ chức & cán bộ"
+        subtitle="Cây đơn vị, vị trí việc làm và hồ sơ cán bộ là nền tảng để giao KPI đúng người, xác định cấp trên đánh giá và phạm vi dữ liệu (Nghị định 90/2020, 48/2023)."
+      />
+
+      <SegmentedControl
+        options={[
+          { value: 'org-tree', label: 'Cây đơn vị', icon: Network, badge: departments.length },
+          { value: 'employees', label: 'Cán bộ', icon: Users, badge: users.length },
+          { value: 'positions', label: 'Vị trí việc làm', icon: Briefcase, badge: positions.length },
         ]}
-        title="Quản trị Cơ cấu Tổ chức & Nhân sự"
-        subtitle="Quản trị cây đơn vị phân cấp, danh mục vị trí việc làm và cơ sở dữ liệu cán bộ, công chức, viên chức theo Nghị định 90/2020 & 48/2023"
-        badge={
-          <Badge variant="primary" dot>
-            {users.length} Cán bộ / Nhân sự
-          </Badge>
-        }
-        actions={
-          <SegmentedControl
-            options={[
-              { value: 'org-tree', label: 'Cây đơn vị', icon: Network },
-              { value: 'employees', label: `Hồ sơ cán bộ (${users.length})`, icon: Users },
-              { value: 'positions', label: `Vị trí việc làm (${positions.length})`, icon: Briefcase },
-            ]}
-            value={activeTab}
-            onChange={(val) => setActiveTab(val)}
-            size="md"
-          />
-        }
+        value={activeTab}
+        onChange={(val) => setActiveTab(val)}
       />
 
       {/* ====================================================================== */}
@@ -679,14 +682,14 @@ export const Module1_OrgSystem = () => {
 
                   <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40">
-                      <div className="text-[10px] text-slate-400 font-bold uppercase">Người Đứng Đầu</div>
+                      <div className="text-[10px] text-slate-400 font-bold uppercase">Người đứng đầu</div>
                       <div className="font-bold text-slate-800 dark:text-slate-200 mt-1">
                         {selectedDept.managerName || 'Chưa bổ nhiệm'}
                       </div>
                     </div>
 
                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40">
-                      <div className="text-[10px] text-slate-400 font-bold uppercase">Sĩ Số Cán Bộ</div>
+                      <div className="text-[10px] text-slate-400 font-bold uppercase">Số cán bộ</div>
                       <div className="font-extrabold text-blue-600 text-base mt-0.5">
                         {deptStaff.length} <span className="text-xs font-normal text-slate-400">cán bộ</span>
                       </div>
@@ -722,7 +725,7 @@ export const Module1_OrgSystem = () => {
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-                      Cán Bộ Trực Thuộc ({deptStaff.length})
+                      Cán bộ trực thuộc ({deptStaff.length})
                     </h4>
                     <button
                       onClick={() => {
@@ -832,7 +835,7 @@ export const Module1_OrgSystem = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                  Đơn vị phòng ban:
+                  Đơn vị
                 </label>
                 <select
                   value={filterDept}
@@ -850,7 +853,7 @@ export const Module1_OrgSystem = () => {
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                  Loại đối tượng cán bộ:
+                  Đối tượng
                 </label>
                 <select
                   value={filterEmployeeType}
@@ -868,7 +871,7 @@ export const Module1_OrgSystem = () => {
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                  Ngạch công chức:
+                  Ngạch
                 </label>
                 <select
                   value={filterCadreRank}
@@ -885,7 +888,7 @@ export const Module1_OrgSystem = () => {
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                  Vai trò RBAC:
+                  Vai trò
                 </label>
                 <select
                   value={filterRole}
@@ -893,9 +896,11 @@ export const Module1_OrgSystem = () => {
                   className="w-full text-xs py-1.5 px-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200"
                 >
                   <option value="ALL">Tất cả vai trò</option>
-                  <option value="ADMIN">Quản trị viên (Admin)</option>
-                  <option value="MANAGER">Trưởng đơn vị (Manager)</option>
-                  <option value="EMPLOYEE">Chuyên viên (Employee)</option>
+                  {MAIN_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {getRoleLabel(r)}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -907,12 +912,12 @@ export const Module1_OrgSystem = () => {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 dark:bg-slate-800/80 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-200 dark:border-slate-800">
                   <tr>
-                    <th className="py-3 px-4">Cán bộ / Họ và tên</th>
-                    <th className="py-3 px-4">Mã & Định danh</th>
-                    <th className="py-3 px-4">Đơn vị & Vị trí</th>
-                    <th className="py-3 px-4">Loại & Ngạch</th>
-                    <th className="py-3 px-4">Vai trò & Quyền</th>
-                    <th className="py-3 px-4">Bảo mật 2FA</th>
+                    <th className="py-3 px-4">Cán bộ</th>
+                    <th className="py-3 px-4">Mã cán bộ</th>
+                    <th className="py-3 px-4">Đơn vị</th>
+                    <th className="py-3 px-4">Ngạch</th>
+                    <th className="py-3 px-4">Vai trò</th>
+                    <th className="py-3 px-4">Xác thực 2 lớp</th>
                     <th className="py-3 px-4 text-right">Thao tác</th>
                   </tr>
                 </thead>
@@ -975,16 +980,16 @@ export const Module1_OrgSystem = () => {
                         {/* Vai trò RBAC */}
                         <td className="py-3 px-4">
                           <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
-                            u.role === 'ADMIN'
+                            u.role === 'SYSTEM_ADMIN' || u.role === 'ADMIN'
                               ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
-                              : u.role === 'MANAGER'
+                              : ['EXECUTIVE', 'UNIT_HEAD', 'LINE_MANAGER', 'MANAGER'].includes(u.role)
                               ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
                               : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                           }`}>
-                            {u.roleTitle || u.role}
+                            {getRoleLabel(u.role)}
                           </span>
                           <div className="text-[10px] text-slate-400 mt-1">
-                            Scope: {u.dataScope || (u.role === 'ADMIN' ? 'ALL' : 'SELF_ONLY')}
+                            {getScopeLabel(u.dataScope || DEFAULT_SCOPE[u.role] || 'SELF')}
                           </div>
                         </td>
 
@@ -1068,7 +1073,7 @@ export const Module1_OrgSystem = () => {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                Danh Mục Vị Trí Việc Làm & Tiêu Chuẩn Ngạch
+                Vị trí việc làm
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
                 Cấu hình vị trí lãnh đạo, chuyên môn nghiệp vụ theo Nghị định 62/2020 & 106/2020
@@ -1427,21 +1432,23 @@ export const Module1_OrgSystem = () => {
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Vai Trò Quyền Hạn (RBAC)
+                    Vai trò
                   </label>
                   <select
                     value={userForm.role}
                     onChange={(e) => {
                       const role = e.target.value;
-                      const roleTitle = role === 'ADMIN' ? 'Quản trị viên' : role === 'MANAGER' ? 'Trưởng đơn vị' : 'Chuyên viên';
-                      const dataScope = role === 'ADMIN' ? 'ALL' : role === 'MANAGER' ? 'DEPARTMENT_AND_CHILDREN' : 'SELF_ONLY';
+                      const roleTitle = getRoleLabel(role);
+                      const dataScope = DEFAULT_SCOPE[role] || 'SELF';
                       setUserForm({ ...userForm, role, roleTitle, dataScope });
                     }}
                     className="w-full py-2 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
                   >
-                    <option value="ADMIN">Quản trị viên (Super Admin)</option>
-                    <option value="MANAGER">Trưởng đơn vị (Manager)</option>
-                    <option value="EMPLOYEE">Chuyên viên / Cán bộ (Employee)</option>
+                    {MAIN_ROLES.map((r) => (
+                      <option key={r} value={r}>
+                        {getRoleLabel(r)}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -1519,7 +1526,7 @@ export const Module1_OrgSystem = () => {
                     <Download size={20} />
                   </div>
                   <div>
-                    <div className="font-extrabold text-slate-900 dark:text-white">File Excel Mẫu Tiêu Chuẩn</div>
+                    <div className="font-extrabold text-slate-900 dark:text-white">Tệp Excel mẫu</div>
                     <div className="text-[11px] text-slate-400">Gồm 9 cột: Mã CB, Họ tên, Email, SĐT, Mã phòng ban, Chức danh, Loại đối tượng, Ngạch, Hệ số lương</div>
                   </div>
                 </div>
@@ -1560,21 +1567,21 @@ export const Module1_OrgSystem = () => {
                   {/* Summary Cards */}
                   <div className="grid grid-cols-3 gap-3">
                     <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-center">
-                      <div className="text-[10px] font-bold text-slate-400 uppercase">Tổng số dòng kiểm tra</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase">Tổng số dòng</div>
                       <div className="text-xl font-extrabold text-slate-800 dark:text-slate-200 mt-1">
                         {importReport.totalRows}
                       </div>
                     </div>
 
                     <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center">
-                      <div className="text-[10px] font-bold text-emerald-600 uppercase">Dòng hợp lệ (Sẵn sàng)</div>
+                      <div className="text-[10px] font-bold text-emerald-600 uppercase">Hợp lệ</div>
                       <div className="text-xl font-extrabold text-emerald-700 dark:text-emerald-300 mt-1 flex items-center justify-center gap-1.5">
                         <CheckCircle2 size={18} /> {importReport.validCount}
                       </div>
                     </div>
 
                     <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-center">
-                      <div className="text-[10px] font-bold text-red-600 uppercase">Dòng lỗi phát hiện</div>
+                      <div className="text-[10px] font-bold text-red-600 uppercase">Lỗi</div>
                       <div className="text-xl font-extrabold text-red-700 dark:text-red-300 mt-1 flex items-center justify-center gap-1.5">
                         <XCircle size={18} /> {importReport.errorCount}
                       </div>
