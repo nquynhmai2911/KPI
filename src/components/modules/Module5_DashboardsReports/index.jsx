@@ -26,10 +26,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from 'recharts';
 import { PageHeader } from '../../common/PageHeader';
 import { SectionCard } from '../../common/SectionCard';
-import { StatCard } from '../../common/StatCard';
+import { Card } from '../../ui/Card';
+import { InfoTip } from '../../ui/InfoTip';
 import { EXCELLENT_QUOTA_INFO, getRankStats, getRankVariant, RANK_LABELS } from '../../../utils/labels';
 import { DepartmentKPIChart } from '../../dashboard/DepartmentKPIChart';
 import { RankDistributionChart } from '../../dashboard/RankDistributionChart';
@@ -38,6 +40,25 @@ import { Badge } from '../../ui/Badge';
 import { SegmentedControl } from '../../ui/SegmentedControl';
 
 import { NumberText } from '../../common/NumberText';
+
+const ReportMetric = ({ label, value, unit, tone = 'text-slate-900 dark:text-slate-100', info }) => (
+  <div className="flex flex-col gap-1 px-6 py-4">
+    <span className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
+      {label}
+      {info && <InfoTip size={13}>{info}</InfoTip>}
+    </span>
+    <span className={`text-2xl font-semibold tabular-nums tracking-tight ${tone}`}>
+      {value}
+      {unit && <span className="ml-1 text-sm font-normal text-slate-400">{unit}</span>}
+    </span>
+  </div>
+);
+
+const REPORT_FILTERS = [
+  { value: 'ALL', label: 'Tất cả' },
+  { value: 'REWARD', label: 'Đề xuất khen thưởng' },
+  { value: 'FAILED', label: 'Không hoàn thành' },
+];
 
 export const Module5_DashboardsReports = () => {
   const {
@@ -68,16 +89,17 @@ export const Module5_DashboardsReports = () => {
 
   // Multi-period historical trend data
   const multiPeriodTrendData = [
-    { period: 'Q1/2026', avgScore: 84.2, completionRate: 88.5, excellentRate: 16.5 },
-    { period: 'Q2/2026', avgScore: 86.8, completionRate: 90.2, excellentRate: 18.0 },
-    { period: 'Q3/2026', avgScore: 87.5, completionRate: 91.4, excellentRate: 19.2 },
-    { period: 'Q4/2026', avgScore: avgOrgScore, completionRate: 92.4, excellentRate: rateExcellent },
+    { period: 'Quý 1/2026', avgScore: 84.2, completionRate: 88.5, excellentRate: 16.5 },
+    { period: 'Quý 2/2026', avgScore: 86.8, completionRate: 90.2, excellentRate: 18.0 },
+    { period: 'Quý 3/2026', avgScore: 87.5, completionRate: 91.4, excellentRate: 19.2 },
+    { period: 'Quý 4/2026', avgScore: avgOrgScore, completionRate: 92.4, excellentRate: rateExcellent },
   ];
 
   // Reward Proposals (Danh sách đề xuất khen thưởng)
   const rewardList = periodPlans.filter((p) => p.finalRank === 'XUẤT SẮC');
   // Failed List
   const failedList = periodPlans.filter((p) => p.finalRank === 'KHÔNG HOÀN THÀNH');
+  const filteredReport = reportFilter === 'REWARD' ? rewardList : reportFilter === 'FAILED' ? failedList : periodPlans;
 
   // Export CSV Helper
   const handleExportCSV = (type = 'GENERAL') => {
@@ -136,31 +158,28 @@ export const Module5_DashboardsReports = () => {
         onChange={(val) => setActiveTab(val)}
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatCard label="Điểm trung bình" value={avgOrgScore} unit="điểm" icon={Award} color="primary" />
-        <StatCard
-          label="Xuất sắc"
-          value={countExcellent}
-          unit={`/ ${quota.maxAllowed} tối đa`}
-          icon={CheckCircle2}
-          color={quota.withinQuota ? 'success' : 'danger'}
-          subtext={EXCELLENT_QUOTA_INFO}
-        />
-        <StatCard label="Đề xuất khen thưởng" value={rewardList.length} unit="người" icon={Sparkles} color="info" />
-        <StatCard
-          label="Không hoàn thành"
-          value={countFailed}
-          unit="người"
-          icon={AlertTriangle}
-          color={countFailed > 0 ? 'danger' : 'success'}
-        />
-      </div>
-
       {/* ==============================================================================
           TAB 1: DASHBOARD LÃNH ĐẠO (EXECUTIVE DASHBOARD)
           ============================================================================== */}
       {activeTab === 'executive' && (
         <div className="space-y-6">
+          <Card padding="none" className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-slate-100 dark:divide-slate-800 overflow-hidden">
+            <ReportMetric label="Điểm trung bình" value={avgOrgScore} />
+            <ReportMetric
+              label="Xuất sắc"
+              value={countExcellent}
+              unit={`/ tối đa ${quota.maxAllowed}`}
+              tone={quota.withinQuota ? undefined : 'text-rose-600 dark:text-rose-400'}
+              info={EXCELLENT_QUOTA_INFO}
+            />
+            <ReportMetric label="Đề xuất khen thưởng" value={rewardList.length} unit="người" />
+            <ReportMetric
+              label="Không hoàn thành"
+              value={countFailed}
+              unit="người"
+              tone={countFailed > 0 ? 'text-rose-600 dark:text-rose-400' : undefined}
+            />
+          </Card>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <SectionCard className="lg:col-span-2" icon={Building2} title="Theo đơn vị" description="Tiến độ trung bình các chỉ tiêu và điểm trung bình của cán bộ đã xếp loại trong từng đơn vị.">
               <DepartmentKPIChart />
@@ -176,91 +195,83 @@ export const Module5_DashboardsReports = () => {
           TAB 2: BÁO CÁO CHUYÊN SÂU & DANH SÁCH LỌC (Yêu cầu Phase 5)
           ============================================================================== */}
       {activeTab === 'reports' && (
-        <SectionCard
-          icon={FileSpreadsheet}
-          title="Danh sách xếp loại"
-        >
-          <div className="space-y-4">
-            {/* Filter toolbar */}
-            <div className="flex flex-wrap gap-2 text-xs">
-              <Button
-                variant={reportFilter === 'ALL' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setReportFilter('ALL')}
-              >
-                Tất cả ({periodPlans.length})
-              </Button>
-              <Button
-                variant={reportFilter === 'REWARD' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setReportFilter('REWARD')}
-              >
-                Đề xuất khen thưởng ({rewardList.length})
-              </Button>
-              <Button
-                variant={reportFilter === 'FAILED' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setReportFilter('FAILED')}
-              >
-                Không hoàn thành nhiệm vụ ({failedList.length})
-              </Button>
-            </div>
-
-            {/* Report Table */}
-            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-800/50 text-left text-xs font-medium text-slate-500 border-b border-slate-200 dark:border-slate-800">
-                  <tr>
-                    <th className="p-3">Cán bộ</th>
-                    <th className="p-3">Đơn vị</th>
-                    <th className="p-3">Số KPI</th>
-                    <th className="p-3">Điểm quản lý</th>
-                    <th className="p-3">Điểm 360°</th>
-                    <th className="p-3">Điểm tổng</th>
-                    <th className="p-3">Xếp loại</th>
-                    <th className="p-3">Khen thưởng</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {periodPlans
-                    .filter((p) => {
-                      if (reportFilter === 'REWARD') return p.finalRank === 'XUẤT SẮC';
-                      if (reportFilter === 'FAILED') return p.finalRank === 'KHÔNG HOÀN THÀNH';
-                      return true;
-                    })
-                    .map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                        <td className="p-3">
-                          <strong className="text-slate-900 dark:text-slate-100">{p.employeeName}</strong>
-                          <div className="text-[11px] text-slate-400">{p.positionTitle}</div>
-                        </td>
-                        <td className="p-3 text-slate-700 dark:text-slate-300">{p.departmentName}</td>
-                        <td className="p-3 tabular-nums">{p.items?.length || 0}</td>
-                        <td className="p-3 font-semibold tabular-nums">{p.overallManagerScore || 88}</td>
-                        <td className="p-3 font-semibold tabular-nums">{p.peerScoreAvg || 90}</td>
-                        <td className="p-3 font-bold text-primary-600 tabular-nums">{p.finalScore || 88}</td>
-                        <td className="p-3">
-                          <Badge variant={getRankVariant(p.finalRank)}>
-                            {RANK_LABELS[p.finalRank] || 'Chưa xếp loại'}
-                          </Badge>
-                        </td>
-                        <td className="p-3">
-                          {p.finalRank === 'XUẤT SẮC' ? (
-                            <span className="text-purple-700 dark:text-purple-300 font-semibold flex items-center gap-1">
-                              <Sparkles className="w-3.5 h-3.5 text-purple-500" />
-                              Chiến sĩ thi đua cơ sở
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+        <Card padding="none">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Danh sách xếp loại</h3>
+            <div className="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5 text-sm">
+              {REPORT_FILTERS.map((f) => {
+                const count = f.value === 'REWARD' ? rewardList.length : f.value === 'FAILED' ? failedList.length : periodPlans.length;
+                return (
+                  <button
+                    key={f.value}
+                    type="button"
+                    onClick={() => setReportFilter(f.value)}
+                    className={`px-3 py-1.5 rounded-md whitespace-nowrap transition-colors cursor-pointer ${
+                      reportFilter === f.value
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-medium shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    {f.label} <span className="tabular-nums text-slate-400">{count}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
-        </SectionCard>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-800/50 text-left text-xs font-medium text-slate-500">
+                  <th className="px-6 py-2.5 font-medium">Cán bộ</th>
+                  <th className="px-3 py-2.5 font-medium">Đơn vị</th>
+                  <th className="px-3 py-2.5 font-medium text-right">Số KPI</th>
+                  <th className="px-3 py-2.5 font-medium text-right">Quản lý chấm</th>
+                  <th className="px-3 py-2.5 font-medium text-right">Đồng nghiệp</th>
+                  <th className="px-3 py-2.5 font-medium text-right">Điểm tổng</th>
+                  <th className="px-3 py-2.5 font-medium">Xếp loại</th>
+                  <th className="px-6 py-2.5 font-medium">Khen thưởng</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredReport.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-10 text-center text-slate-500">
+                      Không có cán bộ nào trong nhóm này.
+                    </td>
+                  </tr>
+                )}
+                {filteredReport.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <td className="px-6 py-3">
+                      <div className="font-medium text-slate-900 dark:text-slate-100">{p.employeeName}</div>
+                      <div className="text-xs text-slate-500">{p.positionTitle}</div>
+                    </td>
+                    <td className="px-3 py-3 text-slate-600 dark:text-slate-400">{p.departmentName}</td>
+                    <td className="px-3 py-3 text-right tabular-nums">{p.items?.length || 0}</td>
+                    <td className="px-3 py-3 text-right tabular-nums">{p.overallManagerScore || '—'}</td>
+                    <td className="px-3 py-3 text-right tabular-nums">{p.peerScoreAvg || '—'}</td>
+                    <td className="px-3 py-3 text-right font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                      {p.finalRank ? p.finalScore : '—'}
+                    </td>
+                    <td className="px-3 py-3">
+                      <Badge variant={getRankVariant(p.finalRank)}>{RANK_LABELS[p.finalRank] || 'Chưa xếp loại'}</Badge>
+                    </td>
+                    <td className="px-6 py-3">
+                      {p.finalRank === 'XUẤT SẮC' ? (
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-purple-700 dark:text-purple-300">
+                          <Sparkles size={14} />
+                          Chiến sĩ thi đua cơ sở
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       )}
 
       {/* ==============================================================================
@@ -278,21 +289,27 @@ export const Module5_DashboardsReports = () => {
                 <LineChart data={multiPeriodTrendData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
                   <XAxis dataKey="period" tick={{ fill: 'currentColor', fontSize: 12 }} className="text-slate-500 font-medium" />
-                  <YAxis domain={[75, 100]} tick={{ fill: 'currentColor', fontSize: 12 }} className="text-slate-500 font-mono" />
+                  <YAxis domain={[0, 100]} tick={{ fill: 'currentColor', fontSize: 12 }} className="text-slate-500 font-mono" />
                   <Tooltip />
+                  <Legend iconType="plainline" wrapperStyle={{ fontSize: 13 }} />
                   <Line type="monotone" dataKey="avgScore" name="Điểm trung bình" stroke="#2563eb" strokeWidth={3} dot={{ r: 5 }} />
-                  <Line type="monotone" dataKey="completionRate" name="Tỷ lệ hoàn thành %" stroke="#10b981" strokeWidth={2} strokeDasharray="5 5" />
-                  <Line type="monotone" dataKey="excellentRate" name="Tỷ lệ Xuất sắc %" stroke="#7c3aed" strokeWidth={2} />
+                  <Line type="monotone" dataKey="completionRate" name="Tỷ lệ hoàn thành (%)" stroke="#10b981" strokeWidth={2} strokeDasharray="5 5" />
+                  <Line type="monotone" dataKey="excellentRate" name="Tỷ lệ xuất sắc (%)" stroke="#7c3aed" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
-              {multiPeriodTrendData.map((d, idx) => (
-                <div key={idx} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
-                  <div className="font-bold text-slate-800 dark:text-slate-200">{d.period}</div>
-                  <div className="text-primary-600 font-black text-lg tabular-nums">{d.avgScore} điểm</div>
-                  <div className="text-slate-400 text-[11px]">Hoàn thành: {d.completionRate}% | Xuất sắc: {d.excellentRate}%</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-slate-200 dark:border-slate-800 divide-x divide-y lg:divide-y-0 divide-slate-100 dark:divide-slate-800 overflow-hidden">
+              {multiPeriodTrendData.map((d) => (
+                <div key={d.period} className="px-5 py-4 space-y-1">
+                  <div className="text-sm text-slate-500">{d.period}</div>
+                  <div className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                    {d.avgScore}
+                    <span className="ml-1 text-sm font-normal text-slate-400">điểm</span>
+                  </div>
+                  <div className="text-xs text-slate-500 tabular-nums">
+                    Hoàn thành {d.completionRate}% · Xuất sắc {d.excellentRate}%
+                  </div>
                 </div>
               ))}
             </div>
@@ -307,28 +324,23 @@ export const Module5_DashboardsReports = () => {
         <SectionCard
           title={
             systemOperatingMode === 'GOVERNMENT'
-              ? 'Sử dụng Kết quả: Phục vụ Quy hoạch Cán bộ, Bổ nhiệm & Nâng lương Trước hạn'
-              : 'Sử dụng Kết quả: Tính Quỹ thưởng & Bảng Lương theo Hệ số KPI'
+              ? 'Đủ điều kiện quy hoạch, nâng lương trước hạn'
+              : 'Thưởng theo hệ số KPI'
           }
           description={
             systemOperatingMode === 'GOVERNMENT'
-              ? 'Áp dụng kết quả xếp loại 02 năm liên tiếp phục vụ quy hoạch chức danh lãnh đạo và nâng bậc lương trước thời hạn'
-              : 'Quy đổi hệ số K_KPI theo từng bậc xếp loại: Loại A (1.5x), Loại B (1.2x), Loại C (1.0x), Loại D (0.0x)'
+              ? 'Theo Khoản 1 Điều 3 Thông tư 08/2013/TT-BNV: cán bộ được xếp loại Hoàn thành xuất sắc nhiệm vụ và có thành tích xuất sắc được xem xét nâng bậc lương trước thời hạn tối đa 12 tháng; kết quả 2 năm liên tiếp dùng cho quy hoạch chức danh lãnh đạo.'
+              : 'Hệ số thưởng theo xếp loại: Xuất sắc 1,5; Tốt 1,2; Hoàn thành 1,0; Không hoàn thành 0.'
           }
           action={
-            <Button variant="primary" size="sm" icon={Download} onClick={() => handleExportCSV('SALARY')}>
-              Xuất bảng phân bổ thưởng
+            <Button variant="outline" size="sm" icon={Download} onClick={() => handleExportCSV('SALARY')}>
+              Xuất danh sách
             </Button>
           }
         >
           <div className="space-y-4 text-xs">
             {systemOperatingMode === 'GOVERNMENT' ? (
               <div className="space-y-3">
-                <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 text-purple-900 dark:text-purple-200 space-y-1">
-                  <strong>Điều kiện Nâng lương Trước thời hạn (Khoản 1 Điều 3 Thông tư 08/2013/TT-BNV):</strong>
-                  <p>Cán bộ, công chức, viên chức được xếp loại chất lượng ở mức <strong>Hoàn thành xuất sắc nhiệm vụ</strong> và có thành tích xuất sắc được xem xét nâng bậc lương trước thời hạn tối đa 12 tháng.</p>
-                </div>
-
                 <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50 dark:bg-slate-800/50 text-left text-xs font-medium text-slate-500">
@@ -336,18 +348,25 @@ export const Module5_DashboardsReports = () => {
                         <th className="p-3">Cán bộ</th>
                         <th className="p-3">Ngạch bậc hiện tại</th>
                         <th className="p-3">Hệ số lương</th>
-                        <th className="p-3">Xếp loại Q4/2026</th>
+                        <th className="p-3">Xếp loại</th>
                         <th className="p-3">Đề xuất sử dụng kết quả</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {rewardList.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="p-10 text-center text-sm text-slate-500">
+                            Kỳ này chưa có cán bộ xếp loại Xuất sắc.
+                          </td>
+                        </tr>
+                      )}
                       {rewardList.map((p) => (
                         <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                           <td className="p-3 font-bold text-slate-900 dark:text-slate-100">{p.employeeName}</td>
                           <td className="p-3 text-slate-600">{p.positionTitle}</td>
                           <td className="p-3 tabular-nums font-mono">3.00</td>
-                          <td className="p-3"><Badge variant="excellent">XUẤT SẮC</Badge></td>
-                          <td className="p-3 font-semibold text-emerald-600">Đủ điều kiện quy hoạch bổ nhiệm & nâng bậc lương trước thời hạn 12 tháng</td>
+                          <td className="p-3"><Badge variant="excellent">Xuất sắc</Badge></td>
+                          <td className="p-3 font-semibold text-emerald-600">Quy hoạch, nâng bậc lương trước hạn 12 tháng</td>
                         </tr>
                       ))}
                     </tbody>
@@ -364,8 +383,8 @@ export const Module5_DashboardsReports = () => {
                         <th className="p-3">Chức danh</th>
                         <th className="p-3">Lương cơ bản</th>
                         <th className="p-3">Xếp loại</th>
-                        <th className="p-3">Hệ số K_KPI</th>
-                        <th className="p-3">Thưởng KPI thực nhận</th>
+                        <th className="p-3">Hệ số</th>
+                        <th className="p-3">Thưởng KPI</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -402,15 +421,15 @@ export const Module5_DashboardsReports = () => {
           title="Mẫu in"
           description="Phiếu đánh giá cá nhân và biên bản họp theo mẫu Nghị định 90/2020; in trực tiếp hoặc lưu PDF."
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-sm">
             <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
               <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
                 <FileText className="w-5 h-5" />
               </div>
-              <h4 className="font-bold text-sm">Mẫu số 01: Phiếu Đánh giá Cá nhân</h4>
-              <p className="text-slate-500">Mẫu nhận xét, tự đánh giá và phân loại cán bộ, công chức chuẩn NĐ 90/2020/NĐ-CP.</p>
+              <h4 className="font-semibold text-slate-900 dark:text-slate-100">Mẫu 01: Phiếu đánh giá cá nhân</h4>
+              <p className="text-slate-500 leading-snug">Mẫu nhận xét, tự đánh giá và phân loại cán bộ, công chức theo Nghị định 90/2020.</p>
               <Button
-                variant="primary"
+                variant="outline"
                 size="sm"
                 icon={Printer}
                 onClick={() => {
@@ -426,8 +445,8 @@ export const Module5_DashboardsReports = () => {
               <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
                 <Users className="w-5 h-5" />
               </div>
-              <h4 className="font-bold text-sm">Biên bản Họp Hội nghị Tập thể</h4>
-              <p className="text-slate-500">Biên bản họp lấy ý kiến góp ý của tập thể đơn vị và kết quả bỏ phiếu biểu quyết.</p>
+              <h4 className="font-semibold text-slate-900 dark:text-slate-100">Biên bản họp tập thể</h4>
+              <p className="text-slate-500 leading-snug">Biên bản họp lấy ý kiến góp ý của tập thể đơn vị và kết quả bỏ phiếu biểu quyết.</p>
               <Button
                 variant="outline"
                 size="sm"
@@ -445,8 +464,8 @@ export const Module5_DashboardsReports = () => {
               <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
                 <Building className="w-5 h-5" />
               </div>
-              <h4 className="font-bold text-sm">Bảng Tổng hợp Kết quả Đơn vị</h4>
-              <p className="text-slate-500">Bảng kê phân loại mức chất lượng của toàn thể công chức, viên chức trong cơ quan.</p>
+              <h4 className="font-semibold text-slate-900 dark:text-slate-100">Bảng tổng hợp kết quả đơn vị</h4>
+              <p className="text-slate-500 leading-snug">Bảng kê phân loại mức chất lượng của toàn thể công chức, viên chức trong cơ quan.</p>
               <Button
                 variant="outline"
                 size="sm"
