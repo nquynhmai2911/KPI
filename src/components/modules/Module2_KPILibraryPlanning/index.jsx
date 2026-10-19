@@ -7,29 +7,20 @@ import {
   Plus,
   Trash2,
   CheckCircle,
-  XCircle,
-  Search,
-  Filter,
   Send,
   Sparkles,
-  Info,
   ChevronDown,
-  Layers,
   AlertTriangle,
-  AlertCircle,
   ArrowRight,
   ArrowLeft,
   Edit3,
   Lock,
-  Unlock,
   History,
   Upload,
   Download,
   FileSpreadsheet,
   Eye,
-  RefreshCw,
   Sliders,
-  Target,
   Check,
   RotateCcw,
   MessageSquare,
@@ -40,7 +31,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
-import { Card, CardHeader, CardTitle, CardContent } from '../../ui/Card';
+import { Card } from '../../ui/Card';
 import { Input } from '../../ui/Input';
 import { Select } from '../../ui/Select';
 import { SegmentedControl } from '../../ui/SegmentedControl';
@@ -50,12 +41,8 @@ import { InfoTip } from '../../ui/InfoTip';
 import { Modal } from '../../ui/Modal';
 import { getPlanStage } from '../../../utils/labels';
 import { PageHeader } from '../../common/PageHeader';
-import { SectionCard } from '../../common/SectionCard';
-import { StatCard } from '../../common/StatCard';
-import { StatusBadge } from '../../common/StatusBadge';
+
 import { ProgressBar } from '../../common/ProgressBar';
-import { DateText } from '../../common/DateText';
-import { NumberText } from '../../common/NumberText';
 
 const WIZARD_STEPS = [
   { step: 1, label: 'Người nhận', icon: User },
@@ -75,6 +62,8 @@ const PLAN_STATUS = {
   ASSIGNED: { label: 'Chờ cán bộ xác nhận', variant: 'primary' },
   FEEDBACK_REQUESTED: { label: 'Cán bộ đề nghị sửa', variant: 'danger' },
   ACCEPTED: { label: 'Chờ phê duyệt', variant: 'warning' },
+  SUBMITTED: { label: 'Chờ phê duyệt', variant: 'warning' },
+  REJECTED: { label: 'Bị trả lại', variant: 'danger' },
   APPROVED: { label: 'Đã phê duyệt', variant: 'success' },
   LOCKED: { label: 'Đã khóa', variant: 'purple' },
 };
@@ -310,7 +299,6 @@ export const Module2_KPILibraryPlanning = () => {
   // ==============================================================================
   // 2. WORKFLOW (DANH SÁCH BẢNG GIAO & DUYỆT & ĐIỀU CHỈNH GIỮA KỲ)
   // ==============================================================================
-  const [workflowFilterPeriod, setWorkflowFilterPeriod] = useState('ALL');
   const [workflowFilterStatus, setWorkflowFilterStatus] = useState('ALL');
   const [selectedPlanDetail, setSelectedPlanDetail] = useState(null);
 
@@ -333,11 +321,15 @@ export const Module2_KPILibraryPlanning = () => {
   const filteredPlans = useMemo(() => {
     return kpiPlans.filter((p) => {
       const matchOwner = !isSelfOnly || p.employeeId === currentUser.id;
-      const matchPeriod = workflowFilterPeriod === 'ALL' || p.periodId === workflowFilterPeriod;
+      const matchPeriod = p.periodId === activePeriod?.id;
       const matchStatus = workflowFilterStatus === 'ALL' || p.status === workflowFilterStatus;
       return matchOwner && matchPeriod && matchStatus;
     });
-  }, [kpiPlans, workflowFilterPeriod, workflowFilterStatus, isSelfOnly, currentUser.id]);
+  }, [kpiPlans, activePeriod, workflowFilterStatus, isSelfOnly, currentUser.id]);
+
+  const detailPlan = isSelfOnly
+    ? filteredPlans[0]
+    : selectedPlanDetail && kpiPlans.find((p) => p.id === selectedPlanDetail.id);
 
   // Open Revision Modal
   const handleOpenRevision = (plan) => {
@@ -476,8 +468,7 @@ KPI-LRN-01,Số giờ hoàn thành chứng chỉ chuyên môn,Học hỏi & Phá
     <div className="space-y-6">
       {/* Page Header (Yêu cầu Bước 5) */}
       <PageHeader
-        icon={Target}
-        title="Giao chỉ tiêu KPI"
+        title="Giao chỉ tiêu"
         subtitle="Mục tiêu cơ quan được phân rã xuống đơn vị và từng cá nhân. Quản lý giao phiếu KPI (tổng trọng số phải đúng 100%), cán bộ xác nhận hoặc góp ý, lãnh đạo phê duyệt rồi khóa phiếu trước khi thực hiện."
       />
 
@@ -855,28 +846,20 @@ KPI-LRN-01,Số giờ hoàn thành chứng chỉ chuyên môn,Học hỏi & Phá
           ============================================================================== */}
       {activeTab === 'workflow' && (
         <div className="space-y-6">
+          {isSelfOnly && !detailPlan && (
+            <Card className="py-12 text-center text-sm text-slate-400">Bạn chưa được giao phiếu KPI trong kỳ này.</Card>
+          )}
+          {!isSelfOnly && (
           <Card padding="none" className="overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 p-4">
               <div className="flex flex-wrap items-center gap-3 [&>div]:w-52">
-                <Select
-                  value={workflowFilterPeriod}
-                  onChange={(e) => setWorkflowFilterPeriod(e.target.value)}
-                  aria-label="Kỳ đánh giá"
-                >
-                  <option value="ALL">Tất cả kỳ</option>
-                  {periods.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </Select>
                 <Select
                   value={workflowFilterStatus}
                   onChange={(e) => setWorkflowFilterStatus(e.target.value)}
                   aria-label="Trạng thái"
                 >
                   <option value="ALL">Tất cả trạng thái</option>
-                  {Object.entries(PLAN_STATUS).map(([k, v]) => (
+                  {Object.entries(PLAN_STATUS).filter(([k]) => !['SUBMITTED', 'REJECTED'].includes(k)).map(([k, v]) => (
                     <option key={k} value={k}>
                       {v.label}
                     </option>
@@ -965,7 +948,7 @@ KPI-LRN-01,Số giờ hoàn thành chứng chỉ chuyên môn,Học hỏi & Phá
                                 </Button>
                               </>
                             )}
-                            {!isOwner && canApprove && plan.status === 'ACCEPTED' && (
+                            {!isOwner && canApprove && ['ACCEPTED', 'SUBMITTED'].includes(plan.status) && (
                               <Button size="sm" icon={CheckCircle2} onClick={() => approveKpiPlan(plan.id)}>
                                 Phê duyệt
                               </Button>
@@ -1002,29 +985,49 @@ KPI-LRN-01,Số giờ hoàn thành chứng chỉ chuyên môn,Học hỏi & Phá
               </table>
             </div>
           </Card>
+          )}
 
-          {selectedPlanDetail && (
+          {detailPlan && (
             <Card className="space-y-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                    {selectedPlanDetail.employeeName}
-                    <span className="ml-2 text-xs font-normal text-slate-400">v{selectedPlanDetail.version || 1}</span>
+                  <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+                    {isSelfOnly ? `Phiếu KPI ${activePeriod?.name?.replace(/^Kỳ đánh giá\s*/i, '') || ''}` : detailPlan.employeeName}
+                    <Badge size="sm" variant={(PLAN_STATUS[detailPlan.status] || {}).variant || 'default'}>
+                      {(PLAN_STATUS[detailPlan.status] || {}).label || detailPlan.status}
+                    </Badge>
+                    {(detailPlan.version || 1) > 1 && <span className="text-xs font-normal text-slate-400">v{detailPlan.version}</span>}
                   </h3>
                   <div className="text-sm text-slate-500">
-                    {selectedPlanDetail.positionTitle} · {selectedPlanDetail.departmentName}
+                    {detailPlan.positionTitle} · {detailPlan.departmentName}
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  icon={X}
-                  onClick={() => setSelectedPlanDetail(null)}
-                  aria-label="Đóng"
-                />
+                {isSelfOnly ? (
+                  detailPlan.status === 'ASSIGNED' && (
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" icon={Check} onClick={() => acceptKpiPlan(detailPlan.id)}>
+                        Xác nhận chỉ tiêu
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        icon={MessageSquare}
+                        onClick={() => {
+                          setFeedbackPlanId(detailPlan.id);
+                          setFeedbackText('');
+                          setShowFeedbackModal(true);
+                        }}
+                      >
+                        Góp ý
+                      </Button>
+                    </div>
+                  )
+                ) : (
+                  <Button size="sm" variant="ghost" icon={X} onClick={() => setSelectedPlanDetail(null)} aria-label="Đóng" />
+                )}
               </div>
 
-              <ProcessFlow currentKey={getPlanStage(selectedPlanDetail, periods.find((p) => p.id === selectedPlanDetail.periodId))} />
+              <ProcessFlow currentKey={getPlanStage(detailPlan, periods.find((p) => p.id === detailPlan.periodId))} />
 
               <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
                 <table className="w-full text-sm">
@@ -1037,7 +1040,7 @@ KPI-LRN-01,Số giờ hoàn thành chứng chỉ chuyên môn,Học hỏi & Phá
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {(selectedPlanDetail.items || []).map((it) => (
+                    {(detailPlan.items || []).map((it) => (
                       <tr key={it.id || it.kpiCode}>
                         <td className="px-4 py-2.5">
                           <div className="font-medium text-slate-800 dark:text-slate-200">{it.name}</div>
@@ -1054,13 +1057,13 @@ KPI-LRN-01,Số giờ hoàn thành chứng chỉ chuyên môn,Học hỏi & Phá
                 </table>
               </div>
 
-              {selectedPlanDetail.revisions?.length > 0 && (
+              {detailPlan.revisions?.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
                     <History size={16} className="text-primary-600" />
                     Lịch sử điều chỉnh
                   </div>
-                  {selectedPlanDetail.revisions.map((rev, idx) => (
+                  {detailPlan.revisions.map((rev, idx) => (
                     <div key={idx} className="rounded-lg bg-slate-50 dark:bg-slate-800/50 px-4 py-3 text-sm">
                       <div className="flex justify-between text-xs text-slate-500 mb-1">
                         <span className="font-semibold text-slate-700 dark:text-slate-300">v{rev.version}</span>
