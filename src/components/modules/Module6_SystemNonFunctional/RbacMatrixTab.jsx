@@ -3,7 +3,7 @@ import { useApp } from '../../../context/AppContext';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { InfoTip } from '../../ui/InfoTip';
-import { ROLE_LABELS, getScopeLabel } from '../../../utils/labels';
+import { ROLE_LABELS, getScopeLabel, toSentenceCase } from '../../../utils/labels';
 import {
   Copy,
   ToggleLeft,
@@ -117,8 +117,9 @@ export const RbacMatrixTab = () => {
       </div>
 
       {/* 3. Filters Toolbar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-sm">
+      <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="w-full sm:w-60 shrink-0">
           <div className="relative w-full">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -126,51 +127,50 @@ export const RbacMatrixTab = () => {
               placeholder="Tìm quyền..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs focus:outline-hidden focus:ring-2 focus:ring-primary-500 text-slate-800 dark:text-slate-200"
+              className="w-full h-9 pl-9 pr-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-primary-500 text-slate-800 dark:text-slate-200"
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto sm:justify-end">
           {modules.map((m) => (
             <button
               key={m}
               onClick={() => setSelectedModule(m)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
                 selectedModule === m
                   ? 'bg-primary-600 text-white font-semibold'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
-              {m === 'ALL' ? 'Tất cả' : m}
+              {m === 'ALL' ? 'Tất cả' : toSentenceCase(m)}
             </button>
           ))}
         </div>
       </div>
 
       {/* 4. Interactive RBAC Matrix Table */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left text-xs">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800">
-                <th className="p-3 font-bold text-slate-700 dark:text-slate-300 min-w-[240px] sticky left-0 bg-slate-50 dark:bg-slate-800/90 z-10 backdrop-blur-xs">
+                <th className="p-3 font-medium text-slate-500 min-w-[220px] sticky left-0 bg-slate-50 dark:bg-slate-800/90 z-10 backdrop-blur-xs">
                   Quyền hạn
                 </th>
                 {rolesConfig.map((role) => (
                   <th
                     key={role.code}
-                    className={`p-3 text-center min-w-[150px] border-l border-slate-200 dark:border-slate-800 transition-colors ${
+                    className={`p-3 text-center min-w-[124px] whitespace-normal border-l border-slate-200 dark:border-slate-800 transition-colors ${
                       !role.isActive ? 'opacity-50 bg-slate-100/50 dark:bg-slate-950/50' : ''
                     }`}
                   >
                     <div className="space-y-1.5">
-                      <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
+                      <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs leading-snug">
                         {ROLE_LABELS[role.code] || role.name}
                       </div>
                       <div className="flex items-center justify-center gap-1.5">
                         <span
-                          className={`text-[9px] px-1.5 py-0.2 rounded-md font-mono font-bold ${
+                          className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium whitespace-nowrap ${
                             role.dataScope === 'ALL'
                               ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
                               : role.dataScope === 'UNIT_AND_CHILDREN'
@@ -213,7 +213,7 @@ export const RbacMatrixTab = () => {
                       {perm.name}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[11px] text-slate-400">{perm.module}</span>
+                      <span className="text-[11px] text-slate-400">{toSentenceCase(perm.module)}</span>
                     </div>
                   </td>
 

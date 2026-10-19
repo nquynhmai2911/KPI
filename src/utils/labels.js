@@ -225,3 +225,42 @@ export const getDepartmentStats = (plans = []) => {
     }))
     .sort((a, b) => (b.avgScore ?? b.progress) - (a.avgScore ?? a.progress));
 };
+
+const KEEP_UPPER = new Set(['KPI', 'API', 'IP', 'SSO', 'CCCD']);
+
+// Bỏ tiền tố "Module N:" và viết hoa chữ đầu câu: "Theo dõi Tiến độ" → "Theo dõi tiến độ"
+export const toSentenceCase = (text = '') => {
+  const words = String(text).replace(/^Module \d+:\s*/, '').split(' ');
+  return words
+    .map((w, i) => (KEEP_UPPER.has(w) ? w : i === 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w.toLowerCase()))
+    .join(' ');
+};
+
+const AUDIT_VALUE_LABELS = {
+  DRAFT: 'Nháp',
+  ASSIGNED: 'Đã giao',
+  FEEDBACK_REQUESTED: 'Có góp ý',
+  ACCEPTED: 'Đã xác nhận',
+  SUBMITTED: 'Chờ phê duyệt',
+  APPROVED: 'Đã phê duyệt',
+  REJECTED: 'Bị trả lại',
+  LOCKED: 'Đã khóa',
+  PLANNED: 'Sắp mở',
+  REGISTRATION: 'Đang giao chỉ tiêu',
+  IN_PROGRESS: 'Đang thực hiện',
+  EVALUATING: 'Đang đánh giá',
+  CLOSED: 'Đã khóa sổ',
+};
+
+export const formatAuditValue = (value = '') => {
+  if (AUDIT_VALUE_LABELS[value]) return AUDIT_VALUE_LABELS[value];
+  return Object.entries(RANK_LABELS).reduce(
+    (text, [code, label]) => text.split(code).join(label),
+    String(value).replace('Điểm QL', 'Điểm quản lý'),
+  );
+};
+
+export const formatAuditTime = (value = '') => {
+  const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}` : value;
+};

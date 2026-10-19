@@ -15,6 +15,7 @@ import {
   Info,
   AlertTriangle,
   AlertOctagon,
+  ArrowRight,
 } from 'lucide-react';
 import { PageHeader } from '../../common/PageHeader';
 import { SectionCard } from '../../common/SectionCard';
@@ -24,7 +25,8 @@ import { Input } from '../../ui/Input';
 import { FormField } from '../../common/FormField';
 import { Badge } from '../../ui/Badge';
 import { InfoTip } from '../../ui/InfoTip';
-import { getRoleLabel } from '../../../utils/labels';
+import { getRoleLabel, toSentenceCase, formatAuditValue, formatAuditTime } from '../../../utils/labels';
+import { Card } from '../../ui/Card';
 
 const NOTIF_STYLE = {
   SUCCESS: { icon: CheckCircle2, cls: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400' },
@@ -100,17 +102,17 @@ export const Module6_SystemNonFunctional = () => {
       {activeTab === 'rbac-matrix' && <RbacMatrixTab />}
 
       {activeTab === 'audit-log' && (
-        <SectionCard
-          title="Nhật ký thao tác"
-          icon={History}
-          description="Mọi thao tác thêm, sửa, duyệt, chấm điểm đều được ghi lại kèm người thực hiện, thời gian và địa chỉ IP. Không ai được sửa hoặc xóa nhật ký."
-          action={<span className="text-sm text-slate-500 tabular-nums">{filteredLogs.length} bản ghi</span>}
-        >
-          <div className="flex flex-wrap gap-3 mb-4">
-            <div className="flex-1 min-w-[260px]">
-              <Input leftIcon={Search} placeholder="Tìm người thực hiện, nội dung..." value={auditSearch} onChange={(e) => setAuditSearch(e.target.value)} />
+        <Card padding="none">
+          <div className="flex flex-wrap items-center gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-1.5 mr-auto">
+              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Nhật ký thao tác</h3>
+              <InfoTip>Mọi thao tác thêm, sửa, duyệt, chấm điểm đều được ghi lại kèm người thực hiện, thời gian và địa chỉ IP. Không ai được sửa hoặc xóa nhật ký.</InfoTip>
+              <span className="ml-1 text-sm text-slate-400 tabular-nums">{filteredLogs.length}</span>
             </div>
-            <select className={`${selectCls} w-auto`} value={auditModuleFilter} onChange={(e) => setAuditModuleFilter(e.target.value)}>
+            <div className="w-full sm:w-72">
+              <Input leftIcon={Search} placeholder="Tìm người thực hiện, nội dung…" value={auditSearch} onChange={(e) => setAuditSearch(e.target.value)} />
+            </div>
+            <select className={`${selectCls} sm:w-56`} value={auditModuleFilter} onChange={(e) => setAuditModuleFilter(e.target.value)}>
               <option value="ALL">Tất cả phân hệ</option>
               <option value="Module 1">Tổ chức & kỳ đánh giá</option>
               <option value="Module 2">Giao chỉ tiêu</option>
@@ -120,55 +122,63 @@ export const Module6_SystemNonFunctional = () => {
             </select>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 dark:bg-slate-800/60 text-left text-xs text-slate-500">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Thời gian</th>
-                  <th className="px-4 py-3 font-medium">Người thực hiện</th>
-                  <th className="px-4 py-3 font-medium">Phân hệ</th>
-                  <th className="px-4 py-3 font-medium">Nội dung</th>
-                  <th className="px-4 py-3 font-medium">IP</th>
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-800/50 text-left text-xs font-medium text-slate-500">
+                  <th className="px-6 py-2.5 font-medium">Thời gian</th>
+                  <th className="px-3 py-2.5 font-medium">Người thực hiện</th>
+                  <th className="px-3 py-2.5 font-medium">Phân hệ</th>
+                  <th className="px-3 py-2.5 font-medium">Nội dung</th>
+                  <th className="px-6 py-2.5 font-medium">IP</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredLogs.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-10 text-center text-slate-500">
+                      Không có bản ghi phù hợp.
+                    </td>
+                  </tr>
+                )}
                 {filteredLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                    <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-500 tabular-nums">{log.timestamp}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-slate-900 dark:text-slate-100">{log.userName}</div>
-                      <div className="text-xs text-slate-400">{getRoleLabel(log.role)}</div>
+                  <tr key={log.id} className="align-top hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                    <td className="px-6 py-3 whitespace-nowrap text-slate-500 tabular-nums">{formatAuditTime(log.timestamp)}</td>
+                    <td className="px-3 py-3">
+                      <div className="font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">{log.userName}</div>
+                      <div className="text-xs text-slate-500">{getRoleLabel(log.role)}</div>
                     </td>
-                    <td className="px-4 py-3">
-                      <Badge size="sm" variant="primary">{log.module.replace(/^Module \d+:\s*/, '')}</Badge>
+                    <td className="px-3 py-3">
+                      <Badge size="sm" variant="secondary">{toSentenceCase(log.module)}</Badge>
                     </td>
-                    <td className="px-4 py-3 max-w-md text-slate-700 dark:text-slate-300">
+                    <td className="px-3 py-3 max-w-md text-slate-700 dark:text-slate-300 leading-snug">
                       {log.description}
                       {log.oldValue && log.newValue && (
-                        <div className="text-xs mt-0.5">
-                          <span className="line-through text-rose-500">{log.oldValue}</span> →{' '}
-                          <span className="text-emerald-600 font-medium">{log.newValue}</span>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                          <span className="text-slate-400 line-through">{formatAuditValue(log.oldValue)}</span>
+                          <ArrowRight size={12} className="text-slate-400" />
+                          <span className="font-medium text-emerald-700 dark:text-emerald-400">{formatAuditValue(log.newValue)}</span>
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-xs font-mono text-slate-400">{log.ipAddress}</td>
+                    <td className="px-6 py-3 text-xs font-mono text-slate-400 whitespace-nowrap">{log.ipAddress}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </SectionCard>
+        </Card>
       )}
 
       {activeTab === 'notifications' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <SectionCard className="lg:col-span-2" title="Thông báo đã gửi" icon={Bell}>
-            <ul className="space-y-3">
+          <SectionCard className="lg:col-span-2 self-start overflow-hidden" title="Thông báo đã gửi" icon={Bell}>
+            <ul className="-mx-6 -mb-6 divide-y divide-slate-100 dark:divide-slate-800 border-t border-slate-100 dark:border-slate-800">
               {notifications.map((notif) => {
                 const st = NOTIF_STYLE[notif.type] || NOTIF_STYLE.INFO;
                 const Icon = st.icon;
                 return (
-                  <li key={notif.id} className="flex gap-3 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <li key={notif.id} className="flex gap-3 px-6 py-3.5">
                     <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${st.cls}`}>
                       <Icon size={18} />
                     </span>
@@ -268,21 +278,37 @@ export const Module6_SystemNonFunctional = () => {
       )}
 
       {activeTab === 'backup' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
-          <SectionCard title="Tải bản sao lưu" icon={Download} description="Toàn bộ cơ cấu tổ chức, chức danh, thư viện chỉ tiêu, phiếu KPI, minh chứng và nhật ký thao tác.">
-            <Button icon={Download} onClick={handleExportBackup} className="w-full">Tải tệp sao lưu</Button>
-          </SectionCard>
-          <SectionCard title="Khôi phục dữ liệu mẫu" icon={RotateCcw} description="Xóa các thay đổi và đưa hệ thống về bộ dữ liệu mẫu ban đầu.">
+        <Card padding="none" className="max-w-3xl divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-5">
+            <span className="w-10 h-10 rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-950/60 dark:text-primary-400 flex items-center justify-center shrink-0">
+              <Download size={18} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-slate-900 dark:text-slate-100">Tải bản sao lưu</div>
+              <p className="text-sm text-slate-500 leading-snug">Cơ cấu tổ chức, chức danh, thư viện chỉ tiêu, phiếu KPI, minh chứng và nhật ký thao tác.</p>
+            </div>
+            <Button variant="outline" icon={Download} onClick={handleExportBackup}>
+              Tải tệp
+            </Button>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-5">
+            <span className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 flex items-center justify-center shrink-0">
+              <RotateCcw size={18} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-slate-900 dark:text-slate-100">Khôi phục dữ liệu mẫu</div>
+              <p className="text-sm text-slate-500 leading-snug">Xóa mọi thay đổi và đưa hệ thống về bộ dữ liệu mẫu ban đầu. Không thể hoàn tác.</p>
+            </div>
             <Button
-              variant="danger"
+              variant="outline"
               icon={RotateCcw}
-              className="w-full"
+              className="text-rose-600 border-rose-200 hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/40"
               onClick={() => window.confirm('Khôi phục toàn bộ hệ thống về dữ liệu mẫu?') && resetToDefaultData()}
             >
               Khôi phục
             </Button>
-          </SectionCard>
-        </div>
+          </div>
+        </Card>
       )}
     </div>
   );
