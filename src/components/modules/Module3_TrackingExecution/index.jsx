@@ -40,6 +40,9 @@ import { Badge } from '../../ui/Badge';
 import { Input } from '../../ui/Input';
 import { SegmentedControl } from '../../ui/SegmentedControl';
 import { FormField } from '../../common/FormField';
+import { Card } from '../../ui/Card';
+import { ProcessFlow } from '../../common/ProcessFlow';
+import { getPlanStage, getNextAction } from '../../../utils/labels';
 
 export const Module3_TrackingExecution = () => {
   const {
@@ -57,7 +60,13 @@ export const Module3_TrackingExecution = () => {
     schedulerJobLogs,
     systemOperatingMode,
     showToast,
+    activeRole,
   } = useApp();
+  const canVerify = ['SYSTEM_ADMIN', 'EXECUTIVE', 'UNIT_HEAD', 'LINE_MANAGER'].includes(activeRole);
+  const canAdminister = ['SYSTEM_ADMIN', 'HR_OFFICER'].includes(activeRole);
+  const visibleMeetings = canVerify
+    ? meetings1on1
+    : meetings1on1.filter((m) => m.employeeId === currentUser.id);
 
   // Active Tab: 'my-progress' (Tiến độ cá nhân), 'manager-review' (Xác nhận số liệu Quản lý), 'meetings-1on1' (Check-in 1:1), 'job-scheduler' (Job nền tự động), 'api-sync' (Tích hợp API)
   const [activeTab, setActiveTab] = useState('my-progress');
@@ -174,92 +183,56 @@ export const Module3_TrackingExecution = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <PageHeader
-        breadcrumbs={[
-          { label: 'Trang chủ', onClick: () => {} },
-          { label: 'Thực hiện & Theo dõi' },
-          {
-            label:
-              activeTab === 'my-progress'
-                ? 'Tiến độ cá nhân'
-                : activeTab === 'manager-review'
-                ? 'Xác nhận số liệu'
-                : activeTab === 'meetings-1on1'
-                ? 'Lịch Check-in 1:1'
-                : activeTab === 'job-scheduler'
-                ? 'Job nền cảnh báo'
-                : 'Đồng bộ API',
-          },
-        ]}
-        title={
-          systemOperatingMode === 'GOVERNMENT'
-            ? 'Theo dõi & Cập nhật Kết quả Thực hiện Nhiệm vụ'
-            : 'Theo dõi Tiến độ Thực thi KPI & Check-in 1:1'
-        }
-        subtitle={`Kỳ đánh giá: ${activePeriod?.name || 'Q4/2026'} • Cập nhật số liệu định kỳ, đính kèm minh chứng, trao đổi 1:1 và cảnh báo nguy cơ`}
-        badge={
-          <Badge variant="primary" dot>
-            {activePeriod?.name || 'Q4/2026'}
-          </Badge>
-        }
-        actions={
-          <SegmentedControl
-            options={[
-              { value: 'my-progress', label: 'Tiến độ của tôi', icon: TrendingUp },
-              { value: 'manager-review', label: 'Quản lý duyệt số liệu', icon: CheckCircle },
-              { value: 'meetings-1on1', label: `Check-in 1:1 (${meetings1on1.length})`, icon: MessageSquare },
-              { value: 'job-scheduler', label: 'Job nền cảnh báo', icon: Clock },
-              { value: 'api-sync', label: 'Cổng tích hợp API', icon: Server },
-            ]}
-            value={activeTab}
-            onChange={(val) => setActiveTab(val)}
-            size="md"
-          />
-        }
+        icon={TrendingUp}
+        title="Thực hiện & cập nhật kết quả"
+        subtitle="Cán bộ cập nhật kết quả định kỳ kèm minh chứng; quản lý xác nhận số liệu và trao đổi 1:1 khi chỉ tiêu chậm tiến độ. Hệ thống tự cảnh báo chỉ tiêu dưới 70%."
       />
 
-      {/* 4 StatCards Tổng quan Tiến độ (Yêu cầu Phase 3) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <SegmentedControl
+        options={[
+          { value: 'my-progress', label: 'Tiến độ của tôi', icon: TrendingUp },
+          ...(canVerify ? [{ value: 'manager-review', label: 'Xác nhận số liệu', icon: CheckCircle }] : []),
+          { value: 'meetings-1on1', label: 'Trao đổi 1:1', icon: MessageSquare, badge: visibleMeetings.length },
+          ...(canVerify || canAdminister
+            ? [
+                { value: 'job-scheduler', label: 'Cảnh báo tự động', icon: Clock },
+                { value: 'api-sync', label: 'Kết nối dữ liệu', icon: Server },
+              ]
+            : []),
+        ]}
+        value={activeTab}
+        onChange={(val) => setActiveTab(val)}
+      />
+
+      {activeTab === 'my-progress' && currentPlan && (
+        <Card padding="sm" className="flex flex-col lg:flex-row lg:items-center gap-4">
+          <div className="flex items-center gap-3 lg:w-72 shrink-0 px-2">
+            <span className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <Target size={20} />
+            </span>
+            <div className="min-w-0">
+              <div className="text-xs text-slate-500">Việc cần làm</div>
+              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {getNextAction(currentPlan, { isOwner: currentPlan.employeeId === currentUser.id, period: activePeriod }).text}
+              </div>
+            </div>
+          </div>
+          <ProcessFlow className="flex-1" currentKey={getPlanStage(currentPlan, activePeriod)} />
+        </Card>
+      )}
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <StatCard label="Số chỉ tiêu" value={totalKpis} unit="chỉ tiêu" icon={Target} color="primary" subtext={`Phiếu KPI của ${currentPlan?.employeeName || currentUser.name}`} />
+        <StatCard label="Tiến độ trung bình" value={avgProgress} unit="%" icon={TrendingUp} color={avgProgress >= 80 ? 'success' : 'warning'} />
+        <StatCard label="Đạt (≥ 80%)" value={onTrackCount} unit="chỉ tiêu" icon={CheckCircle2} color="info" />
         <StatCard
-          label="Tổng số chỉ tiêu KPI trong kỳ"
-          value={totalKpis}
-          unit="chỉ tiêu"
-          trend="+0%"
-          trendDirection="up"
-          subtext={`Kế hoạch của: ${currentPlan?.employeeName || currentUser.name}`}
-          icon={Target}
-          color="primary"
-        />
-        <StatCard
-          label="Tiến độ hoàn thành trung bình"
-          value={avgProgress}
-          unit="%"
-          trend={avgProgress >= 80 ? '+6.5%' : '-3.2%'}
-          trendDirection={avgProgress >= 80 ? 'up' : 'down'}
-          subtext={avgProgress >= 80 ? 'Đang bám sát kế hoạch' : 'Cần đôn đốc tăng tốc'}
-          icon={TrendingUp}
-          color={avgProgress >= 80 ? 'success' : 'warning'}
-        />
-        <StatCard
-          label="Chỉ tiêu đạt chuẩn (>=80%)"
-          value={onTrackCount}
-          unit="chỉ tiêu"
-          trend="An toàn"
-          trendDirection="up"
-          subtext="Đảm bảo tiến độ đề ra"
-          icon={CheckCircle2}
-          color="info"
-        />
-        <StatCard
-          label="Chỉ tiêu có nguy cơ (<70%)"
+          label="Nguy cơ (< 70%)"
           value={atRiskCount}
           unit="chỉ tiêu"
-          trend={atRiskCount > 0 ? 'Nguy cơ' : 'Không có'}
-          trendDirection={atRiskCount > 0 ? 'down' : 'up'}
-          subtext={atRiskCount > 0 ? 'Cần lập biên bản trao đổi 1:1' : 'Tất cả chỉ tiêu đều tốt'}
           icon={AlertTriangle}
           color={atRiskCount > 0 ? 'danger' : 'success'}
+          subtext="Chỉ tiêu dưới 70% cần lập biên bản trao đổi 1:1 với quản lý."
         />
       </div>
 
@@ -269,11 +242,12 @@ export const Module3_TrackingExecution = () => {
       {activeTab === 'my-progress' && (
         <div className="space-y-6">
           <SectionCard
-            title={`Bảng Theo dõi & Cập nhật Kết quả: ${currentPlan?.employeeName || currentUser.name}`}
-            description="Bấm 'Cập nhật tiến độ' để nhập kết quả định kỳ, đính kèm nhiều file minh chứng và ghi chú khó khăn."
+            icon={Target}
+            title="Chỉ tiêu trong kỳ"
+            description="Bấm nút cập nhật để nhập kết quả định kỳ, đính kèm minh chứng và ghi chú khó khăn. Mỗi lần cập nhật cần quản lý xác nhận."
             action={
               <Badge variant="primary">
-                Trọng số cam kết: {currentPlan?.totalWeight || 100}%
+                Tổng trọng số {currentPlan?.totalWeight || 100}%
               </Badge>
             }
           >
@@ -301,6 +275,7 @@ export const Module3_TrackingExecution = () => {
                       </h4>
                     </div>
 
+                    {currentPlan.employeeId === currentUser.id && (
                     <div className="flex items-center gap-2 shrink-0">
                       <Button
                         variant="primary"
@@ -311,27 +286,28 @@ export const Module3_TrackingExecution = () => {
                           setShowCheckinModal(true);
                         }}
                       >
-                        Cập nhật tiến độ & Minh chứng
+                        Cập nhật
                       </Button>
                     </div>
+                    )}
                   </div>
 
                   {/* Chỉ số & Tiến độ bar */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-xs">
                     <div>
-                      <span className="text-slate-500">Mục tiêu kỳ vọng:</span>
+                      <span className="text-slate-500">Mục tiêu</span>
                       <div className="font-bold text-slate-800 dark:text-slate-200 text-sm tabular-nums">
                         <NumberText value={item.target} /> {item.unit}
                       </div>
                     </div>
                     <div>
-                      <span className="text-slate-500">Thực tế đã đạt:</span>
+                      <span className="text-slate-500">Thực tế</span>
                       <div className="font-bold text-primary-700 dark:text-primary-400 text-sm tabular-nums">
                         <NumberText value={item.actual || 0} /> {item.unit}
                       </div>
                     </div>
                     <div>
-                      <span className="text-slate-500">Tỷ lệ hoàn thành:</span>
+                      <span className="text-slate-500">Hoàn thành</span>
                       <div className="mt-1">
                         <ProgressBar progress={item.progressPercent || 0} showLabel size="sm" />
                       </div>
@@ -341,7 +317,7 @@ export const Module3_TrackingExecution = () => {
                   {/* Lịch sử Check-in & Trạng thái xác nhận (Yêu cầu Phase 3) */}
                   <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                     <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                      Lịch sử cập nhật & Trạng thái xác nhận của Quản lý:
+                      Lịch sử cập nhật
                     </div>
 
                     {item.checkins && item.checkins.length > 0 ? (
@@ -358,7 +334,7 @@ export const Module3_TrackingExecution = () => {
                                 </span>
                                 <span className="text-slate-400">•</span>
                                 <span className="font-semibold text-primary-600 dark:text-primary-400">
-                                  Giá trị ghi nhận: {chk.actualValue} {item.unit}
+                                  {chk.actualValue} {item.unit}
                                 </span>
                                 <span className="text-slate-400">•</span>
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -369,30 +345,30 @@ export const Module3_TrackingExecution = () => {
                                     : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
                                 }`}>
                                   {chk.verificationStatus === 'CONFIRMED'
-                                    ? '✓ Quản lý đã xác nhận'
+                                    ? 'Đã xác nhận'
                                     : chk.verificationStatus === 'NEEDS_REVISION'
-                                    ? '⚠ Cần bổ sung minh chứng'
-                                    : 'Đang chờ quản lý duyệt'}
+                                    ? 'Cần bổ sung'
+                                    : 'Chờ xác nhận'}
                                 </span>
                               </div>
                               <div className="text-slate-600 dark:text-slate-400">
-                                Ghi chú: {chk.note || 'Không có ghi chú thêm.'}
+                                {chk.note}
                               </div>
                               {chk.evidenceName && (
                                 <div className="flex items-center gap-1.5 text-primary-600 dark:text-primary-400 font-medium">
                                   <Paperclip className="w-3.5 h-3.5" />
-                                  <span>Minh chứng: {chk.evidenceName}</span>
+                                  <span>{chk.evidenceName}</span>
                                 </div>
                               )}
                               {chk.managerComment && (
                                 <div className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 p-1.5 rounded mt-1">
-                                  Ý kiến Quản lý ({chk.verifiedBy}): "{chk.managerComment}"
+                                  {chk.verifiedBy}: "{chk.managerComment}"
                                 </div>
                               )}
                             </div>
 
                             {/* Quản lý nút xác nhận nhanh */}
-                            {(currentUser.role === 'ADMIN' || currentUser.role === 'MANAGER') && (
+                            {canVerify && currentPlan.employeeId !== currentUser.id && (
                               <div className="flex items-center gap-1.5 self-end sm:self-center">
                                 <Button
                                   variant="outline"
@@ -404,7 +380,7 @@ export const Module3_TrackingExecution = () => {
                                     setShowVerifyModal(true);
                                   }}
                                 >
-                                  Xét duyệt số liệu
+                                  Xác nhận
                                 </Button>
                               </div>
                             )}
@@ -413,7 +389,7 @@ export const Module3_TrackingExecution = () => {
                       </div>
                     ) : (
                       <div className="text-xs text-slate-400 italic py-2">
-                        Chưa có lượt cập nhật nào trong kỳ này. Bấm "Cập nhật tiến độ & Minh chứng" ở trên.
+                        Chưa có lượt cập nhật nào.
                       </div>
                     )}
                   </div>
@@ -429,8 +405,9 @@ export const Module3_TrackingExecution = () => {
           ============================================================================== */}
       {activeTab === 'manager-review' && (
         <SectionCard
-          title="Xác nhận & Duyệt Số liệu Thực tế Toàn Đơn vị"
-          description="Trưởng đơn vị xem xét số liệu thực tế, kiểm tra tính hợp lệ của file minh chứng và xác nhận kết quả"
+          icon={CheckCircle}
+          title="Số liệu chờ xác nhận"
+          description="Quản lý kiểm tra số liệu thực tế và minh chứng của cán bộ trước khi tính vào kết quả đánh giá."
         >
           <div className="space-y-4">
             {kpiPlans.map((plan) => (
@@ -440,11 +417,9 @@ export const Module3_TrackingExecution = () => {
               >
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                   <div className="flex items-center gap-3">
-                    <img
-                      src={`https://images.unsplash.com/photo-${1534528741775 + plan.employeeName.length}?w=120&auto=format&fit=crop&q=80`}
-                      alt=""
-                      className="w-10 h-10 rounded-full object-cover ring-1 ring-slate-200"
-                    />
+                    <span className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 dark:bg-primary-950 dark:text-primary-300 flex items-center justify-center text-sm font-semibold">
+                      {plan.employeeName.split(' ').pop()?.[0]}
+                    </span>
                     <div>
                       <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
                         {plan.employeeName}
@@ -455,7 +430,7 @@ export const Module3_TrackingExecution = () => {
                     </div>
                   </div>
                   <Badge variant="primary">
-                    {plan.items?.length || 0} Chỉ tiêu KPI
+                    {plan.items?.length || 0} chỉ tiêu
                   </Badge>
                 </div>
 
@@ -471,7 +446,7 @@ export const Module3_TrackingExecution = () => {
                             {it.name}
                           </strong>
                           <div className="text-slate-500">
-                            Mục tiêu: {it.target} {it.unit} | Thực tế: <span className="font-bold text-primary-600">{it.actual || 0} {it.unit}</span> ({it.progressPercent || 0}%)
+                            Mục tiêu {it.target} {it.unit} · Thực tế <span className="font-bold text-primary-600">{it.actual || 0} {it.unit}</span> ({it.progressPercent || 0}%)
                           </div>
                         </div>
                         <div className="w-32">
@@ -487,13 +462,13 @@ export const Module3_TrackingExecution = () => {
                         >
                           <div>
                             <span className="font-semibold text-slate-800 dark:text-slate-200">
-                              Cập nhật: {chk.actualValue} {it.unit} (Ngày {chk.date})
+                              {chk.actualValue} {it.unit} · {chk.date}
                             </span>
                             <span className="text-slate-400 mx-2">•</span>
-                            <span className="text-slate-500">Ghi chú: {chk.note || 'Đúng tiến độ'}</span>
+                            <span className="text-slate-500">{chk.note}</span>
                             {chk.evidenceName && (
                               <span className="text-primary-600 dark:text-primary-400 ml-2 font-medium">
-                                📎 {chk.evidenceName}
+                                {chk.evidenceName}
                               </span>
                             )}
                           </div>
@@ -504,7 +479,7 @@ export const Module3_TrackingExecution = () => {
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : 'bg-blue-100 text-blue-800'
                             }`}>
-                              {chk.verificationStatus === 'CONFIRMED' ? 'Đã xác nhận' : 'Chờ duyệt'}
+                              {chk.verificationStatus === 'CONFIRMED' ? 'Đã xác nhận' : 'Chờ xác nhận'}
                             </span>
                             <Button
                               variant="outline"
@@ -516,7 +491,7 @@ export const Module3_TrackingExecution = () => {
                                 setShowVerifyModal(true);
                               }}
                             >
-                              Xác nhận số liệu
+                              Xác nhận
                             </Button>
                           </div>
                         </div>
@@ -535,21 +510,24 @@ export const Module3_TrackingExecution = () => {
           ============================================================================== */}
       {activeTab === 'meetings-1on1' && (
         <SectionCard
-          title="Biên bản Trao đổi & Check-in 1:1 Định kỳ giữa Quản lý và Cán bộ"
-          description="Ghi nhận lịch hẹn, nội dung trao đổi, khó khăn rào cản (Blockers), hành động tiếp theo và ngày hẹn đợt tới"
+          icon={MessageSquare}
+          title="Biên bản trao đổi 1:1"
+          description="Quản lý và cán bộ trao đổi định kỳ: nội dung, khó khăn vướng mắc, việc cần làm tiếp và lịch hẹn lần sau."
           action={
-            <Button
-              variant="primary"
-              size="sm"
-              icon={Plus}
-              onClick={() => setShowMeetingModal(true)}
-            >
-              Tạo phiên Check-in 1:1 mới
-            </Button>
+            canVerify && (
+              <Button
+                variant="primary"
+                size="sm"
+                icon={Plus}
+                onClick={() => setShowMeetingModal(true)}
+              >
+                Tạo biên bản
+              </Button>
+            )
           }
         >
           <div className="space-y-4">
-            {meetings1on1.map((meet) => (
+            {visibleMeetings.map((meet) => (
               <div
                 key={meet.id}
                 className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4 shadow-xs"
@@ -561,22 +539,22 @@ export const Module3_TrackingExecution = () => {
                     </div>
                     <div>
                       <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                        Phiên Check-in 1:1: {meet.employeeName}
+                        {meet.employeeName}
                       </h4>
                       <p className="text-xs text-slate-500">
-                        Quản lý chủ trì: <strong>{meet.managerName}</strong> • Ngày thực hiện: <DateText date={meet.date} />
+                        {meet.managerName} · <DateText date={meet.date} />
                       </p>
                     </div>
                   </div>
                   <Badge variant="good">
-                    {meet.status === 'COMPLETED' ? 'Đã hoàn tất trao đổi' : 'Đã lên lịch'}
+                    {meet.status === 'COMPLETED' ? 'Đã trao đổi' : 'Đã lên lịch'}
                   </Badge>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 space-y-1">
                     <div className="font-bold text-slate-700 dark:text-slate-300">
-                      Nội dung trọng tâm trao đổi:
+                      Nội dung
                     </div>
                     <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
                       {meet.topics}
@@ -584,7 +562,7 @@ export const Module3_TrackingExecution = () => {
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 space-y-1">
                     <div className="font-bold text-slate-700 dark:text-slate-300">
-                      Đánh giá tiến độ & Kết quả đạt được:
+                      Kết quả đạt được
                     </div>
                     <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
                       {meet.progressNotes}
@@ -596,7 +574,7 @@ export const Module3_TrackingExecution = () => {
                   <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                      <strong>Khó khăn, vướng mắc & rào cản cần tháo gỡ:</strong> {meet.blockers}
+                      <strong>Vướng mắc:</strong> {meet.blockers}
                     </div>
                   </div>
                 )}
@@ -604,7 +582,7 @@ export const Module3_TrackingExecution = () => {
                 {/* Action Items */}
                 <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
                   <div className="font-bold text-slate-700 dark:text-slate-300">
-                    Cam kết hành động tiếp theo (Action items) & Hạn chót:
+                    Việc cần làm tiếp
                   </div>
                   <div className="space-y-1.5">
                     {meet.actionItems?.map((act) => (
@@ -625,7 +603,7 @@ export const Module3_TrackingExecution = () => {
                     ))}
                   </div>
                   <div className="text-[11px] text-slate-400 pt-1">
-                    Lịch hẹn Check-in phiên kế tiếp: <strong>{meet.nextMeetingDate || 'Sau 2 tuần'}</strong>
+                    Hẹn lần sau: <strong>{meet.nextMeetingDate || 'Sau 2 tuần'}</strong>
                   </div>
                 </div>
               </div>
@@ -639,8 +617,9 @@ export const Module3_TrackingExecution = () => {
           ============================================================================== */}
       {activeTab === 'job-scheduler' && (
         <SectionCard
-          title="Job Nền Quét Tiến độ, Nhắc Hạn & Cảnh báo Nguy cơ Tự động"
-          description="Hệ thống tự động chạy ngầm định kỳ hàng ngày để quét KPI chậm tiến độ (<70%) và phát tán email/thông báo in-app"
+          icon={Clock}
+          title="Cảnh báo tự động"
+          description="Hằng ngày hệ thống tự quét: nhắc hạn trước 3 ngày; cảnh báo chỉ tiêu dưới 70% khi kỳ đã qua hơn 50% thời gian; gửi thông báo trong hệ thống và email công vụ."
           action={
             <Button
               variant="primary"
@@ -648,7 +627,7 @@ export const Module3_TrackingExecution = () => {
               icon={Play}
               onClick={runBackgroundSchedulerJob}
             >
-              Chạy quét Job nền tự động ngay
+              Quét ngay
             </Button>
           }
         >
@@ -666,7 +645,7 @@ export const Module3_TrackingExecution = () => {
             {/* Scheduler Logs */}
             <div className="space-y-2">
               <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Nhật ký các lượt chạy Job nền (Scheduler Logs):
+                Lịch sử quét
               </div>
               <div className="space-y-2">
                 {schedulerJobLogs.map((log) => (
@@ -678,10 +657,10 @@ export const Module3_TrackingExecution = () => {
                       <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                         <strong className="text-slate-900 dark:text-slate-100">
-                          Lượt quét tự động lúc {log.timestamp}
+                          {log.timestamp}
                         </strong>
                       </div>
-                      <Badge variant="good">Trạng thái: {log.status}</Badge>
+                      <Badge variant="good">{log.status === 'SUCCESS' ? 'Thành công' : log.status}</Badge>
                     </div>
 
                     <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -689,10 +668,10 @@ export const Module3_TrackingExecution = () => {
                     </p>
 
                     <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 tabular-nums">
-                      <span>Tổng chỉ tiêu quét: <strong>{log.scannedKpisCount}</strong></span>
-                      <span>Chỉ tiêu nguy cơ: <strong className="text-amber-600">{log.atRiskCount}</strong></span>
-                      <span>Thông báo phát tán: <strong className="text-primary-600">{log.notificationsCreated}</strong></span>
-                      <span>Email mô phỏng: <strong className="text-emerald-600">{log.emailsSimulated}</strong></span>
+                      <span>Đã quét <strong>{log.scannedKpisCount}</strong></span>
+                      <span>Nguy cơ <strong className="text-amber-600">{log.atRiskCount}</strong></span>
+                      <span>Thông báo <strong className="text-primary-600">{log.notificationsCreated}</strong></span>
+                      <span>Email <strong className="text-emerald-600">{log.emailsSimulated}</strong></span>
                     </div>
                   </div>
                 ))}
@@ -707,40 +686,41 @@ export const Module3_TrackingExecution = () => {
           ============================================================================== */}
       {activeTab === 'api-sync' && (
         <SectionCard
-          title="Đồng bộ Số liệu Thực tế Tự động từ các Cổng API Kết nối"
-          description="Kéo dữ liệu đo lường tự động từ hệ thống chấm công, Jira, CRM, cổng dịch vụ công không cần nhập tay"
+          icon={Server}
+          title="Kết nối dữ liệu"
+          description="Tự động lấy số liệu thực tế từ các hệ thống khác, không cần nhập tay."
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
-                Jira
+              <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                <FileText size={20} />
               </div>
-              <h4 className="font-bold text-sm">Hệ thống Jira & Git Tác nghiệp</h4>
-              <p className="text-xs text-slate-500">Đồng bộ tỷ lệ release đúng hạn, burn-down sprint và số bug tồn đọng.</p>
-              <Button variant="primary" size="sm" onClick={() => syncAPIData('jira')}>
-                Đồng bộ Jira ngay
+              <h4 className="font-bold text-sm">Quản lý công việc</h4>
+              <p className="text-xs text-slate-500">Tỷ lệ việc hoàn thành đúng hạn, việc tồn đọng.</p>
+              <Button variant="outline" size="sm" icon={RefreshCw} onClick={() => syncAPIData('jira')}>
+                Đồng bộ
               </Button>
             </div>
 
             <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                Time
+              <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <Clock size={20} />
               </div>
-              <h4 className="font-bold text-sm">Máy chấm công Sinh trắc học</h4>
-              <p className="text-xs text-slate-500">Đồng bộ tỷ lệ đi làm đúng giờ, số ngày công kỷ luật công vụ.</p>
-              <Button variant="primary" size="sm" onClick={() => syncAPIData('timesheet')}>
-                Đồng bộ Chấm công
+              <h4 className="font-bold text-sm">Chấm công</h4>
+              <p className="text-xs text-slate-500">Tỷ lệ đi làm đúng giờ, ngày công.</p>
+              <Button variant="outline" size="sm" icon={RefreshCw} onClick={() => syncAPIData('timesheet')}>
+                Đồng bộ
               </Button>
             </div>
 
             <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-                CRM
+              <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                <Building size={20} />
               </div>
-              <h4 className="font-bold text-sm">Hệ thống CRM Doanh thu & Hợp đồng</h4>
-              <p className="text-xs text-slate-500">Đồng bộ doanh số thực thu, số lượng hợp đồng ký kết trong kỳ.</p>
-              <Button variant="primary" size="sm" onClick={() => syncAPIData('crm')}>
-                Đồng bộ Doanh thu CRM
+              <h4 className="font-bold text-sm">Doanh thu & hợp đồng</h4>
+              <p className="text-xs text-slate-500">Doanh số thực thu, số hợp đồng ký trong kỳ.</p>
+              <Button variant="outline" size="sm" icon={RefreshCw} onClick={() => syncAPIData('crm')}>
+                Đồng bộ
               </Button>
             </div>
           </div>
@@ -752,11 +732,11 @@ export const Module3_TrackingExecution = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
           <div className="bg-white dark:bg-slate-900 rounded-xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Cập nhật Kết quả Thực tế & Minh chứng: {selectedKpiItem.name}
+              Cập nhật kết quả: {selectedKpiItem.name}
             </h3>
 
             <form onSubmit={handleSaveCheckin} className="space-y-4 text-xs">
-              <FormField label="Giá trị thực tế đạt được *" required hint={`Đơn vị tính: ${selectedKpiItem.unit}`}>
+              <FormField label="Giá trị thực tế" required hint={`Đơn vị tính: ${selectedKpiItem.unit}`}>
                 <Input
                   type="number"
                   step="any"
@@ -776,7 +756,7 @@ export const Module3_TrackingExecution = () => {
                 />
               </FormField>
 
-              <FormField label="Ghi chú giải trình kết quả">
+              <FormField label="Ghi chú">
                 <textarea
                   rows={3}
                   className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs"
@@ -789,7 +769,7 @@ export const Module3_TrackingExecution = () => {
               {/* Danh sách file minh chứng đính kèm (Yêu cầu Phase 3) */}
               <div className="space-y-2">
                 <label className="font-bold text-slate-700 dark:text-slate-300">
-                  Tập tin minh chứng đính kèm (Nhiều file):
+                  Minh chứng đính kèm
                 </label>
                 <div className="space-y-1.5">
                   {checkinForm.evidenceFiles.map((f, idx) => (
@@ -820,7 +800,7 @@ export const Module3_TrackingExecution = () => {
 
                 <div className="flex gap-2 pt-1">
                   <Input
-                    placeholder="Tên file minh chứng (VD: Quyet_dinh_ban_hanh.pdf)..."
+                    placeholder="Tên tệp, VD: Quyet_dinh.pdf"
                     value={checkinForm.newFileName}
                     onChange={(e) => setCheckinForm({ ...checkinForm, newFileName: e.target.value })}
                   />
@@ -841,7 +821,7 @@ export const Module3_TrackingExecution = () => {
                       }
                     }}
                   >
-                    Thêm file
+                    Thêm
                   </Button>
                 </div>
               </div>
@@ -864,7 +844,7 @@ export const Module3_TrackingExecution = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
           <div className="bg-white dark:bg-slate-900 rounded-xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Lập Biên bản Phiên Check-in 1:1 Định kỳ
+              Biên bản trao đổi 1:1
             </h3>
 
             <form onSubmit={handleSaveMeeting} className="space-y-4 text-xs">
@@ -883,7 +863,7 @@ export const Module3_TrackingExecution = () => {
                     onChange={(e) => setMeetingForm({ ...meetingForm, date: e.target.value })}
                   />
                 </FormField>
-                <FormField label="Ngày hẹn phiên kế tiếp" required>
+                <FormField label="Hẹn lần sau" required>
                   <Input
                     type="date"
                     value={meetingForm.nextMeetingDate}
@@ -892,14 +872,14 @@ export const Module3_TrackingExecution = () => {
                 </FormField>
               </div>
 
-              <FormField label="Chủ đề trọng tâm trao đổi *" required>
+              <FormField label="Nội dung trao đổi" required>
                 <Input
                   value={meetingForm.topics}
                   onChange={(e) => setMeetingForm({ ...meetingForm, topics: e.target.value })}
                 />
               </FormField>
 
-              <FormField label="Tiến độ & Kết quả cam kết">
+              <FormField label="Kết quả đạt được">
                 <textarea
                   rows={2}
                   className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
@@ -908,7 +888,7 @@ export const Module3_TrackingExecution = () => {
                 />
               </FormField>
 
-              <FormField label="Khó khăn, rào cản cần hỗ trợ (Blockers)">
+              <FormField label="Vướng mắc cần hỗ trợ">
                 <textarea
                   rows={2}
                   className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
@@ -917,7 +897,7 @@ export const Module3_TrackingExecution = () => {
                 />
               </FormField>
 
-              <FormField label="Cam kết hành động tiếp theo (phân cách bằng dấu chấm phẩy ;)">
+              <FormField label="Việc cần làm tiếp" hint="Mỗi việc cách nhau bằng dấu chấm phẩy (;)">
                 <Input
                   value={meetingForm.actionItemsText}
                   onChange={(e) => setMeetingForm({ ...meetingForm, actionItemsText: e.target.value })}
@@ -929,7 +909,7 @@ export const Module3_TrackingExecution = () => {
                   Hủy
                 </Button>
                 <Button variant="primary" size="sm" type="submit">
-                  Lưu biên bản Check-in 1:1
+                  Lưu biên bản
                 </Button>
               </div>
             </form>
@@ -942,17 +922,17 @@ export const Module3_TrackingExecution = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
           <div className="bg-white dark:bg-slate-900 rounded-xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Quản lý Xét duyệt Số liệu & Minh chứng
+              Xác nhận số liệu
             </h3>
 
             <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs space-y-1">
-              <div>Giá trị cập nhật: <strong className="text-primary-600">{verifyingCheckin.actualValue}</strong></div>
-              <div>Ngày cập nhật: <strong>{verifyingCheckin.date}</strong></div>
+              <div>Giá trị: <strong className="text-primary-600">{verifyingCheckin.actualValue}</strong></div>
+              <div>Ngày: <strong>{verifyingCheckin.date}</strong></div>
               <div>Minh chứng: <strong>{verifyingCheckin.evidenceName || 'Không có file'}</strong></div>
-              <div>Ghi chú cán bộ: {verifyingCheckin.note}</div>
+              <div>Ghi chú: {verifyingCheckin.note}</div>
             </div>
 
-            <FormField label="Ý kiến đánh giá / Yêu cầu giải trình của Quản lý:">
+            <FormField label="Ý kiến của quản lý">
               <textarea
                 rows={3}
                 className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
