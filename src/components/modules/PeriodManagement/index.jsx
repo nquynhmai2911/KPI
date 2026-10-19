@@ -1,31 +1,33 @@
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
-import {
-  CalendarCog,
-  Plus,
-  CalendarDays,
-  ArrowRight,
-  Lock,
-  CheckCircle2,
-  ClipboardList,
-  TrendingUp,
-  ClipboardCheck,
-  X,
-  Users,
-} from 'lucide-react';
+import { CalendarCog, Plus, ArrowRight, Lock, Check, ClipboardList, TrendingUp, ClipboardCheck, Eye } from 'lucide-react';
 import { PageHeader } from '../../common/PageHeader';
 import { Card } from '../../ui/Card';
 import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Input';
+import { Modal } from '../../ui/Modal';
+import { Badge } from '../../ui/Badge';
 import { FormField } from '../../common/FormField';
+import { ProgressBar } from '../../common/ProgressBar';
 import { InfoTip } from '../../ui/InfoTip';
+import { calculateDaysLeft } from '../../../types/kpiTaskSchema';
 
 const PERIOD_FLOW = [
-  { status: 'REGISTRATION', label: 'Giao chỉ tiêu', icon: ClipboardList, statusName: 'Đang giao chỉ tiêu' },
-  { status: 'IN_PROGRESS', label: 'Thực hiện', icon: TrendingUp, statusName: 'Đang thực hiện' },
-  { status: 'EVALUATING', label: 'Đánh giá', icon: ClipboardCheck, statusName: 'Đang đánh giá' },
+  { status: 'REGISTRATION', label: 'Giao chỉ tiêu', icon: ClipboardList, statusName: 'Đang giao chỉ tiêu', dateKey: 'registrationDeadline', dateLabel: 'Hạn' },
+  { status: 'IN_PROGRESS', label: 'Thực hiện', icon: TrendingUp, statusName: 'Đang thực hiện', dateKey: 'endDate', dateLabel: 'Đến' },
+  { status: 'EVALUATING', label: 'Đánh giá', icon: ClipboardCheck, statusName: 'Đang đánh giá', dateKey: 'evaluationDeadline', dateLabel: 'Hạn' },
   { status: 'CLOSED', label: 'Khóa sổ', icon: Lock, statusName: 'Đã khóa sổ' },
 ];
+
+const STATUS_VARIANT = { REGISTRATION: 'warning', IN_PROGRESS: 'primary', EVALUATING: 'purple', CLOSED: 'default' };
+
+const STAGE_COUNTDOWN = {
+  REGISTRATION: 'tới hạn giao chỉ tiêu',
+  IN_PROGRESS: 'đến cuối kỳ',
+  EVALUATING: 'tới hạn đánh giá',
+};
+
+const statusLabel = (p) => PERIOD_FLOW.find((s) => s.status === p.status)?.statusName || p.statusName;
 
 const formatDate = (d) => (d ? new Date(d).toLocaleDateString('vi-VN') : '—');
 
@@ -38,15 +40,66 @@ const EMPTY_FORM = {
   evaluationDeadline: '',
 };
 
+const periodStats = (plans) => {
+  const accepted = plans.filter((pl) => ['ACCEPTED', 'APPROVED', 'LOCKED'].includes(pl.status)).length;
+  const approved = plans.filter((pl) => ['APPROVED', 'LOCKED'].includes(pl.status)).length;
+  const evaluated = plans.filter((pl) => pl.evaluationStatus === 'EVALUATED').length;
+  return { total: plans.length, accepted, approved, evaluated };
+};
+
+const StageFlow = ({ period }) => {
+  const stepIdx = Math.max(0, PERIOD_FLOW.findIndex((s) => s.status === period.status));
+  const closed = period.status === 'CLOSED';
+  return (
+    <ol className="grid grid-cols-4">
+      {PERIOD_FLOW.map((s, i) => {
+        const Icon = s.icon;
+        const done = i < stepIdx || closed;
+        const current = i === stepIdx && !closed;
+        return (
+          <li key={s.status} className="relative flex flex-col items-center text-center gap-1.5">
+            {i < PERIOD_FLOW.length - 1 && (
+              <span
+                aria-hidden="true"
+                className={`absolute top-5 left-[calc(50%+24px)] right-[calc(-50%+24px)] h-0.5 rounded-full ${
+                  done ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700'
+                }`}
+              />
+            )}
+            <span
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                current
+                  ? 'bg-primary-600 text-white ring-4 ring-primary-100 dark:ring-primary-900/60'
+                  : done
+                  ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400'
+                  : 'bg-slate-100 text-slate-400 dark:bg-slate-800'
+              }`}
+            >
+              {done ? <Check size={18} strokeWidth={2.5} /> : <Icon size={18} />}
+            </span>
+            <span className={`text-sm ${current ? 'font-semibold text-primary-700 dark:text-primary-300' : 'text-slate-600 dark:text-slate-400'}`}>
+              {s.label}
+            </span>
+            <span className="text-xs text-slate-400 tabular-nums h-4">
+              {s.dateKey && period[s.dateKey] ? `${s.dateLabel} ${formatDate(period[s.dateKey])}` : ''}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+};
+
 export const PeriodManagement = () => {
   const { periods, addPeriod, updatePeriodStatus, kpiPlans, activePeriod, setActivePeriodId, activeRole } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
 
   const canManage = ['SYSTEM_ADMIN', 'HR_OFFICER'].includes(activeRole);
+  const current = activePeriod || periods[0];
 
   const handleCreate = (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!form.name || !form.startDate || !form.endDate) return;
     addPeriod({
       ...form,
@@ -58,12 +111,23 @@ export const PeriodManagement = () => {
     setShowForm(false);
   };
 
+  const stepIdx = Math.max(0, PERIOD_FLOW.findIndex((s) => s.status === current?.status));
+  const currentStage = PERIOD_FLOW[stepIdx];
+  const next = PERIOD_FLOW[stepIdx + 1];
+  const stats = periodStats(kpiPlans.filter((pl) => pl.periodId === current?.id));
+  const stageDeadline = currentStage?.dateKey ? current?.[currentStage.dateKey] : null;
+  const daysLeft = stageDeadline ? calculateDaysLeft(stageDeadline) : null;
+
+  const advance = () => {
+    if (next.status === 'CLOSED' && !window.confirm('Khóa sổ kỳ này? Sau khi khóa không thể sửa số liệu.')) return;
+    updatePeriodStatus(current.id, next.status, next.statusName);
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={CalendarCog}
         title="Kỳ đánh giá"
-        subtitle="Mỗi kỳ đi qua 4 giai đoạn: Giao chỉ tiêu → Thực hiện → Đánh giá → Khóa sổ. Chỉ Tổ chức cán bộ hoặc Quản trị hệ thống được chuyển giai đoạn."
+        subtitle="Mỗi kỳ đi qua 4 giai đoạn: Giao chỉ tiêu, Thực hiện, Đánh giá, Khóa sổ. Chỉ Tổ chức cán bộ hoặc Quản trị hệ thống được chuyển giai đoạn."
         actions={
           canManage && (
             <Button icon={Plus} onClick={() => setShowForm(true)}>
@@ -73,120 +137,130 @@ export const PeriodManagement = () => {
         }
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {periods.map((p) => {
-          const stepIdx = Math.max(0, PERIOD_FLOW.findIndex((s) => s.status === p.status));
-          const next = PERIOD_FLOW[stepIdx + 1];
-          const plans = kpiPlans.filter((pl) => pl.periodId === p.id);
-          const evaluated = plans.filter((pl) => pl.evaluationStatus === 'EVALUATED').length;
-          const isActive = activePeriod?.id === p.id;
-
-          return (
-            <Card key={p.id} className={isActive ? 'ring-2 ring-primary-500/40 border-primary-300 dark:border-primary-700' : ''}>
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-snug">{p.name}</h3>
-                    {p.description && <InfoTip>{p.description}</InfoTip>}
-                  </div>
-                  <div className="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
-                    <CalendarDays size={14} />
-                    {formatDate(p.startDate)} – {formatDate(p.endDate)}
-                  </div>
-                </div>
-                {isActive ? (
-                  <span className="whitespace-nowrap inline-flex items-center gap-1 text-xs font-medium text-primary-700 bg-primary-50 dark:text-primary-300 dark:bg-primary-950/60 px-2 py-1 rounded-lg shrink-0">
-                    <CheckCircle2 size={14} /> Đang xem
+      {current && (
+        <Card padding="none" className="overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-4 px-6 pt-5">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{current.name}</h2>
+                <Badge size="sm" variant={STATUS_VARIANT[current.status]}>{statusLabel(current)}</Badge>
+                {current.description && <InfoTip>{current.description}</InfoTip>}
+              </div>
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400 tabular-nums">
+                {formatDate(current.startDate)} – {formatDate(current.endDate)}
+                {daysLeft !== null && current.status !== 'CLOSED' && (
+                  <span className={daysLeft < 0 ? 'text-rose-600' : daysLeft <= 7 ? 'text-amber-600' : ''}>
+                    {' · '}
+                    {daysLeft < 0
+                      ? `Quá ${-daysLeft} ngày ${STAGE_COUNTDOWN[current.status]}`
+                      : `Còn ${daysLeft} ngày ${STAGE_COUNTDOWN[current.status]}`}
                   </span>
-                ) : (
-                  <Button size="sm" variant="ghost" onClick={() => setActivePeriodId(p.id)}>
-                    Xem kỳ này
-                  </Button>
                 )}
-              </div>
-
-              {/* Giai đoạn của kỳ */}
-              <div className="mt-6 grid grid-cols-4 gap-2">
-                {PERIOD_FLOW.map((s, i) => {
-                  const Icon = s.icon;
-                  const done = i < stepIdx || p.status === 'CLOSED';
-                  const current = i === stepIdx && p.status !== 'CLOSED';
-                  return (
-                    <div key={s.status} className="flex flex-col items-center gap-1.5 text-center">
-                      <div className="w-full flex items-center">
-                        <span className={`flex-1 h-0.5 ${i === 0 ? 'invisible' : done || current ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700'}`} />
-                        <span
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                            current
-                              ? 'bg-primary-600 text-white shadow-sm shadow-primary-600/30'
-                              : done
-                              ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400'
-                              : 'bg-slate-100 text-slate-400 dark:bg-slate-800'
-                          }`}
-                        >
-                          {done ? <CheckCircle2 size={16} /> : <Icon size={16} />}
-                        </span>
-                        <span className={`flex-1 h-0.5 ${i === PERIOD_FLOW.length - 1 ? 'invisible' : done ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700'}`} />
-                      </div>
-                      <span className={`text-xs ${current ? 'font-semibold text-primary-700 dark:text-primary-300' : 'text-slate-500 dark:text-slate-400'}`}>
-                        {s.label}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-6 grid grid-cols-3 gap-3">
-                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3">
-                  <div className="text-xs text-slate-500">Hạn giao chỉ tiêu</div>
-                  <div className="mt-0.5 text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200">{formatDate(p.registrationDeadline)}</div>
-                </div>
-                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3">
-                  <div className="text-xs text-slate-500">Hạn đánh giá</div>
-                  <div className="mt-0.5 text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200">{formatDate(p.evaluationDeadline)}</div>
-                </div>
-                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3">
-                  <div className="text-xs text-slate-500 flex items-center gap-1"><Users size={12} /> Đã đánh giá</div>
-                  <div className="mt-0.5 text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200">
-                    {evaluated}/{plans.length} phiếu
-                  </div>
-                </div>
-              </div>
-
-              {canManage && next && (
-                <div className="mt-5 pt-5 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-                  <Button
-                    variant={next.status === 'CLOSED' ? 'outline' : 'primary'}
-                    size="sm"
-                    rightIcon={next.status === 'CLOSED' ? Lock : ArrowRight}
-                    onClick={() => {
-                      if (next.status === 'CLOSED' && !window.confirm('Khóa sổ kỳ này? Sau khi khóa không thể sửa số liệu.')) return;
-                      updatePeriodStatus(p.id, next.status, next.statusName);
-                    }}
-                  >
-                    Chuyển sang: {next.label}
-                  </Button>
-                </div>
-              )}
-            </Card>
-          );
-        })}
-      </div>
-
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
-          <form onSubmit={handleCreate} className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <CalendarCog className="w-5 h-5 text-primary-600" /> Mở kỳ đánh giá mới
-              </h3>
-              <button type="button" onClick={() => setShowForm(false)} className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" aria-label="Đóng">
-                <X size={16} />
-              </button>
+              </p>
             </div>
-            <FormField label="Tên kỳ" required>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="VD: Kỳ đánh giá Quý 1 / 2027" />
-            </FormField>
+            {canManage && next && (
+              <Button
+                variant={next.status === 'CLOSED' ? 'outline' : 'primary'}
+                size="sm"
+                rightIcon={next.status === 'CLOSED' ? Lock : ArrowRight}
+                onClick={advance}
+              >
+                {next.status === 'CLOSED' ? 'Khóa sổ kỳ' : `Chuyển sang ${next.label.toLowerCase()}`}
+              </Button>
+            )}
+          </div>
+
+          <div className="px-6 py-6">
+            <StageFlow period={current} />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800 border-t border-slate-100 dark:border-slate-800">
+            {[
+              { label: 'Cán bộ đã xác nhận', done: stats.accepted },
+              { label: 'Đã phê duyệt chỉ tiêu', done: stats.approved },
+              { label: 'Đã đánh giá', done: stats.evaluated },
+            ].map((m) => ({ ...m, value: `${m.done}/${stats.total}`, pct: stats.total ? (m.done / stats.total) * 100 : 0 })).map((m) => (
+              <div key={m.label} className="px-6 py-4 space-y-2">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">{m.label}</span>
+                  <span className="text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-100">{m.value}</span>
+                </div>
+                <ProgressBar value={Math.round(m.pct)} size="sm" />
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Card padding="none" className="overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Tất cả các kỳ</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 dark:bg-slate-800/50 text-left text-xs font-medium text-slate-500">
+              <tr>
+                <th className="px-6 py-2.5">Tên kỳ</th>
+                <th className="px-4 py-2.5">Thời gian</th>
+                <th className="px-4 py-2.5">Giai đoạn</th>
+                <th className="px-4 py-2.5 text-right">Đã đánh giá</th>
+                <th className="px-6 py-2.5" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {periods.map((p) => {
+                const s = periodStats(kpiPlans.filter((pl) => pl.periodId === p.id));
+                const isActive = current?.id === p.id;
+                return (
+                  <tr key={p.id} className={isActive ? 'bg-primary-50/40 dark:bg-primary-950/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'}>
+                    <td className="px-6 py-3 font-medium text-slate-800 dark:text-slate-200">{p.name}</td>
+                    <td className="px-4 py-3 text-slate-500 tabular-nums whitespace-nowrap">
+                      {formatDate(p.startDate)} – {formatDate(p.endDate)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge size="sm" variant={STATUS_VARIANT[p.status]}>{statusLabel(p)}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
+                      {s.total ? `${s.evaluated}/${s.total}` : '—'}
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      {isActive ? (
+                        <span className="text-xs font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap">Đang xem</span>
+                      ) : (
+                        <Button size="sm" variant="ghost" icon={Eye} onClick={() => setActivePeriodId(p.id)}>
+                          Xem
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Modal
+        open={showForm}
+        title="Mở kỳ đánh giá mới"
+        icon={CalendarCog}
+        onClose={() => setShowForm(false)}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setShowForm(false)}>Hủy</Button>
+            <Button icon={Plus} onClick={handleCreate} disabled={!form.name || !form.startDate || !form.endDate}>
+              Mở kỳ
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleCreate} className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2">
+              <FormField label="Tên kỳ" required>
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="VD: Kỳ đánh giá Quý 1 / 2027" />
+              </FormField>
+            </div>
             <FormField label="Loại kỳ">
               <select
                 value={form.type}
@@ -199,27 +273,23 @@ export const PeriodManagement = () => {
                 <option value="YEAR">Năm</option>
               </select>
             </FormField>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField label="Bắt đầu" required>
-                <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
-              </FormField>
-              <FormField label="Kết thúc" required>
-                <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
-              </FormField>
-              <FormField label="Hạn giao chỉ tiêu" hint="Sau hạn này phiếu KPI bị khóa, chỉ điều chỉnh giữa kỳ khi có lý do.">
-                <Input type="date" value={form.registrationDeadline} onChange={(e) => setForm({ ...form, registrationDeadline: e.target.value })} />
-              </FormField>
-              <FormField label="Hạn đánh giá" hint="Hạn chót hoàn thành tự đánh giá và cấp trên đánh giá.">
-                <Input type="date" value={form.evaluationDeadline} onChange={(e) => setForm({ ...form, evaluationDeadline: e.target.value })} />
-              </FormField>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setShowForm(false)}>Hủy</Button>
-              <Button type="submit" icon={Plus}>Mở kỳ</Button>
-            </div>
-          </form>
-        </div>
-      )}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Bắt đầu" required>
+              <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+            </FormField>
+            <FormField label="Kết thúc" required>
+              <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+            </FormField>
+            <FormField label="Hạn giao chỉ tiêu" hint="Sau hạn này phiếu KPI bị khóa, chỉ điều chỉnh giữa kỳ khi có lý do.">
+              <Input type="date" value={form.registrationDeadline} onChange={(e) => setForm({ ...form, registrationDeadline: e.target.value })} />
+            </FormField>
+            <FormField label="Hạn đánh giá" hint="Hạn chót tự đánh giá và cấp trên đánh giá.">
+              <Input type="date" value={form.evaluationDeadline} onChange={(e) => setForm({ ...form, evaluationDeadline: e.target.value })} />
+            </FormField>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
